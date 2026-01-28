@@ -8,7 +8,8 @@ from utils import to_bytes, from_bytes
 
 class BPlusTreeNode:
 
-    def __init__(self, fd: int, id_generator: IDGenerator, is_leaf: bool, page_id: int, left_page_id: int, right_page_id: int):
+    def __init__(self, fd: int, id_generator: IDGenerator, is_leaf: bool, page_id: int, left_page_id: int,
+                 right_page_id: int):
         # fd，id_generator，每个节点都需要携带
         self.fd: int = fd
         self.id_generator: IDGenerator = id_generator
@@ -82,16 +83,15 @@ class BPlusTreeNode:
         if child.is_leaf:
             self.keys.insert(index, child.keys[DEGREE])
         else:
-            self.keys.insert(index, child.keys[DEGREE-1])
+            self.keys.insert(index, child.keys[DEGREE - 1])
         child_new = child.split()
-        self.page_ids.insert(index+1, child_new.page_id)
+        self.page_ids.insert(index + 1, child_new.page_id)
         self.persist()
         if key > self.keys[index]:
             child_new[key] = val
         else:
             child[key] = val
         return
-
 
     def set_val(self, key: bytes, val: bytes) -> None:
         i = len(self.keys) - 1
@@ -130,7 +130,7 @@ class BPlusTreeNode:
         else:
             new.keys = self.keys[DEGREE:]
             new.page_ids = self.page_ids[DEGREE:]
-            self.keys = self.keys[:DEGREE-1]
+            self.keys = self.keys[:DEGREE - 1]
             self.page_ids = self.page_ids[:DEGREE]
         new.persist()
         self.persist()
@@ -159,15 +159,15 @@ class BPlusTreeNode:
         # self not leaf
         # child is not enough
         child_left = None
-        if self.left_page_id != NULL_PAGE_ID:
-            child_left = new_b_plus_tree_node_from_page_id(self.fd, self.id_generator, self.left_page_id)
+        if child.left_page_id != NULL_PAGE_ID:
+            child_left = new_b_plus_tree_node_from_page_id(self.fd, self.id_generator, child.left_page_id)
         if self.can_borrow_child_left(page_id_index, child_left):
             self.borrow_child_left(page_id_index, child, child_left)
             return key_right
 
         child_right = None
-        if self.right_page_id != NULL_PAGE_ID:
-            child_right = new_b_plus_tree_node_from_page_id(self.fd, self.id_generator, self.right_page_id)
+        if child.right_page_id != NULL_PAGE_ID:
+            child_right = new_b_plus_tree_node_from_page_id(self.fd, self.id_generator, child.right_page_id)
         if self.can_borrow_child_right(page_id_index, child_right):
             self.borrow_child_right(page_id_index, child, child_right)
             return key_right
@@ -176,7 +176,7 @@ class BPlusTreeNode:
             self.merge_right_child(child, child_right, page_id_index)
             return key_right
         else:
-            self.merge_right_child(child_left, child, page_id_index)
+            self.merge_right_child(child_left, child, page_id_index - 1)
             return key_right
 
     def delete_val(self, key: bytes) -> bytes | None:
@@ -257,6 +257,7 @@ class BPlusTreeNode:
 
     def merge_right_child(self, left_child: 'BPlusTreeNode', right_child: 'BPlusTreeNode', index: int) -> None:
         if left_child.is_leaf:
+            self.keys.pop(index)
             left_child.keys.extend(right_child.keys)
             left_child.vals.extend(right_child.vals)
             left_child.right_page_id = right_child.right_page_id
@@ -317,14 +318,14 @@ class BPlusTree:
         self.root: BPlusTreeNode = root
 
     def __getitem__(self, key: bytes) -> bytes | None:
-        val = self.root.get_val(key)
+        val = self.root[key]
         return val
 
     def __setitem__(self, key: bytes, val: bytes) -> None:
         if self.root.is_full():
             child = self.root
             new_root = new_b_plus_tree_node(self.fd, self.id_generator, False)
-            _key = child.keys[DEGREE-1]
+            _key = child.keys[DEGREE - 1]
             if child.is_leaf:
                 _key = child.keys[DEGREE]
             new_root.keys = [_key]
@@ -337,7 +338,7 @@ class BPlusTree:
         self.root[key] = val
 
     def __delitem__(self, key: bytes) -> None:
-        self.root.delete(key)
+        del self.root[key]
         if self.root.is_empty() and not self.root.is_leaf:
             page_id = self.root.page_ids[0]
             new_root = new_b_plus_tree_node_from_page_id(self.fd, self.id_generator, page_id)
