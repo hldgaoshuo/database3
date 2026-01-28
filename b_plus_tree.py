@@ -25,6 +25,8 @@ class BPlusTreeNode:
         r = b''
         r += to_bytes(self.is_leaf)
         r += to_bytes(self.page_id)
+        r += to_bytes(self.left_page_id)
+        r += to_bytes(self.right_page_id)
         r += to_bytes(len(self.keys))
         for key in self.keys:
             r += to_bytes(key)
@@ -32,8 +34,6 @@ class BPlusTreeNode:
             r += to_bytes(len(self.vals))
             for val in self.vals:
                 r += to_bytes(val)
-            r += to_bytes(self.left_page_id)
-            r += to_bytes(self.right_page_id)
         else:
             r += to_bytes(len(self.page_ids))
             for page_id in self.page_ids:
@@ -117,21 +117,23 @@ class BPlusTreeNode:
             new.vals = self.vals[DEGREE:]
             self.keys = self.keys[:DEGREE]
             self.vals = self.vals[:DEGREE]
-            if self.right_page_id != NULL_PAGE_ID:
-                r = new_b_plus_tree_node_from_page_id(self.fd, self.id_generator, self.right_page_id)
-                r.left_page_id = new.page_id
-                r.persist()
-                self.right_page_id = new.page_id
-                new.left_page_id = self.page_id
-                new.right_page_id = r.page_id
-            else:
-                self.right_page_id = new.page_id
-                new.left_page_id = self.page_id
         else:
             new.keys = self.keys[DEGREE:]
             new.page_ids = self.page_ids[DEGREE:]
             self.keys = self.keys[:DEGREE - 1]
             self.page_ids = self.page_ids[:DEGREE]
+
+        if self.right_page_id != NULL_PAGE_ID:
+            r = new_b_plus_tree_node_from_page_id(self.fd, self.id_generator, self.right_page_id)
+            r.left_page_id = new.page_id
+            r.persist()
+            self.right_page_id = new.page_id
+            new.left_page_id = self.page_id
+            new.right_page_id = r.page_id
+        else:
+            self.right_page_id = new.page_id
+            new.left_page_id = self.page_id
+
         new.persist()
         self.persist()
         return new
@@ -149,11 +151,14 @@ class BPlusTreeNode:
         page_id = self.page_ids[page_id_index]
         child = new_b_plus_tree_node_from_page_id(self.fd, self.id_generator, page_id)
         key_right = child.delete(key)
-        if child.is_enough():
+
+        if self.need_replace(key, key_right):
             key_index = self.get_key_index(key)
             if key_index is not None and key_right != NULL_PAGE_ID:
                 self.keys[key_index] = key_right
                 self.persist()
+
+        if child.is_enough():
             return key_right
 
         # self not leaf
@@ -194,6 +199,9 @@ class BPlusTreeNode:
                 right = new_b_plus_tree_node_from_page_id(self.fd, self.id_generator, self.right_page_id)
                 key_right = right.keys[0]
         return key_right
+
+    def need_replace(self, removed_key: bytes, replace_key: bytes) -> bool:
+        return removed_key in self.keys and replace_key is not None
 
     def is_enough(self) -> bool:
         return len(self.keys) >= DEGREE - 1
@@ -260,16 +268,18 @@ class BPlusTreeNode:
             self.keys.pop(index)
             left_child.keys.extend(right_child.keys)
             left_child.vals.extend(right_child.vals)
-            left_child.right_page_id = right_child.right_page_id
-            if left_child.right_page_id != NULL_PAGE_ID:
-                rr_child = new_b_plus_tree_node_from_page_id(self.fd, self.id_generator, left_child.right_page_id)
-                rr_child.left_page_id = left_child.page_id
-                rr_child.persist()
         else:
             _key = self.keys.pop(index)
             left_child.keys.append(_key)
             left_child.keys.extend(right_child.keys)
             left_child.page_ids.extend(right_child.page_ids)
+
+        left_child.right_page_id = right_child.right_page_id
+        if left_child.right_page_id != NULL_PAGE_ID:
+            rr_child = new_b_plus_tree_node_from_page_id(self.fd, self.id_generator, left_child.right_page_id)
+            rr_child.left_page_id = left_child.page_id
+            rr_child.persist()
+
         self.page_ids.pop(index + 1)
         self.persist()
         left_child.persist()
@@ -291,20 +301,20 @@ def new_b_plus_tree_node_from_page_id(fd: int, id_generator: IDGenerator, page_i
     # 读取节点信息
     is_leaf = from_bytes(buf, bool)
     page_id = from_bytes(buf, int)
+    left_page_id = from_bytes(buf, int)
+    right_page_id = from_bytes(buf, int)
     num_keys = from_bytes(buf, int)
     keys = [from_bytes(buf, bytes) for _ in range(num_keys)]
     if is_leaf:
         num_vals = from_bytes(buf, int)
         vals = [from_bytes(buf, bytes) for _ in range(num_vals)]
-        left_page_id = from_bytes(buf, int)
-        right_page_id = from_bytes(buf, int)
         node = BPlusTreeNode(fd, id_generator, is_leaf, page_id, left_page_id, right_page_id)
         node.keys = keys
         node.vals = vals
     else:
         num_page_ids = from_bytes(buf, int)
         page_ids = [from_bytes(buf, int) for _ in range(num_page_ids)]
-        node = BPlusTreeNode(fd, id_generator, is_leaf, page_id, NULL_PAGE_ID, NULL_PAGE_ID)
+        node = BPlusTreeNode(fd, id_generator, is_leaf, page_id, left_page_id, right_page_id)
         node.keys = keys
         node.page_ids = page_ids
     return node
@@ -331,6 +341,7 @@ class BPlusTree:
             new_root.keys = [_key]
             new_root.page_ids = [child.page_id]
             child_new = child.split()
+            print(f'child_new.page_id: {child_new.page_id}, child_new.left_page_id: {child_new.left_page_id}, child_new.right_page_id: {child_new.right_page_id}')
             new_root.page_ids.append(child_new.page_id)
             new_root.persist()
             set_root_page_id(self.fd, new_root.page_id)

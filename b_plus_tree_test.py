@@ -33,6 +33,7 @@ def _show(node: BPlusTreeNode, count: int) -> None:
     indent = '---- ' * count
     keys = ','.join([str(k) for k in node.keys])
     print(f'{indent}key:{keys} page_id:{node.page_id}')
+    print(f'{indent}left:{node.left_page_id} right:{node.right_page_id}')
     if not node.is_leaf:
         for page_id in node.page_ids:
             child = new_b_plus_tree_node_from_page_id(node.fd, node.id_generator, page_id)
@@ -252,7 +253,6 @@ def test_delete_2():
     b_plus_tree[b'k'] = b'k'
     show(b_plus_tree.root)
     del b_plus_tree[b'k']
-    show(b_plus_tree.root)
     del b_plus_tree[b'j']
     show(b_plus_tree.root)
 
@@ -272,9 +272,7 @@ def test_delete_3():
     b_plus_tree[b'k'] = b'k'
     show(b_plus_tree.root)
     del b_plus_tree[b'k']
-    show(b_plus_tree.root)
     del b_plus_tree[b'j']
-    show(b_plus_tree.root)
     del b_plus_tree[b'i']
     show(b_plus_tree.root)
 
@@ -294,10 +292,52 @@ def test_delete_4():
     b_plus_tree[b'k'] = b'k'
     show(b_plus_tree.root)
     del b_plus_tree[b'k']
-    show(b_plus_tree.root)
     del b_plus_tree[b'j']
-    show(b_plus_tree.root)
     del b_plus_tree[b'i']
-    show(b_plus_tree.root)
     del b_plus_tree[b'h']
+    show(b_plus_tree.root)
+
+
+def test_delete_5():
+    b_plus_tree = init()
+    b_plus_tree[b'a'] = b'a'
+    b_plus_tree[b'b'] = b'b'
+    b_plus_tree[b'c'] = b'c'
+    b_plus_tree[b'd'] = b'd'
+    b_plus_tree[b'e'] = b'e'
+    b_plus_tree[b'f'] = b'f'
+    b_plus_tree[b'g'] = b'g'
+    b_plus_tree[b'h'] = b'h'
+    b_plus_tree[b'i'] = b'i'
+    b_plus_tree[b'j'] = b'j'
+    b_plus_tree[b'k'] = b'k'
+    show(b_plus_tree.root)
+    del b_plus_tree[b'k']
+    del b_plus_tree[b'j']
+    del b_plus_tree[b'i']
+    del b_plus_tree[b'h']
+    del b_plus_tree[b'g']
+    show(b_plus_tree.root)
+
+
+def test_delete_6():
+    b_plus_tree = init()
+    b_plus_tree[b'a'] = b'a'
+    b_plus_tree[b'b'] = b'b'
+    b_plus_tree[b'c'] = b'c'
+    b_plus_tree[b'd'] = b'd'
+    b_plus_tree[b'e'] = b'e'
+    b_plus_tree[b'f'] = b'f'
+    b_plus_tree[b'g'] = b'g'
+    b_plus_tree[b'h'] = b'h'
+    b_plus_tree[b'i'] = b'i'
+    b_plus_tree[b'j'] = b'j'
+    b_plus_tree[b'k'] = b'k'
+    show(b_plus_tree.root)
+    del b_plus_tree[b'k']
+    del b_plus_tree[b'j']
+    del b_plus_tree[b'i']
+    del b_plus_tree[b'h']
+    del b_plus_tree[b'g']
+    del b_plus_tree[b'f']
     show(b_plus_tree.root)
