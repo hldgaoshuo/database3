@@ -1,6 +1,6 @@
 import os
 
-from const import BYTES_PAGE, META_PAGE_ID, MAGIC_NUMBER_BS, BYTES_USED_PAGE_ID, BYTES_MAGIC_NUMBER
+from const import BYTES_PAGE, META_PAGE_ID, MAGIC_NUMBER_BS, BYTES_USED_PAGE_ID, BYTES_MAGIC_NUMBER, BYTES_TAIL_PAGE_ID, BYTES_HEAD_PAGE_ID
 from utils import to_bytes
 
 
@@ -42,6 +42,16 @@ def set_used_page_id(fd: int, used_page_id: int) -> None:
     file_update(fd, offset, to_bytes(used_page_id))
 
 
-def set_root_page_id(fd: int, root_page_id: int) -> None:
+def set_head_page_id(fd: int, head_page_id: int) -> None:
     offset = META_PAGE_ID * BYTES_PAGE + BYTES_MAGIC_NUMBER + BYTES_USED_PAGE_ID
+    file_update(fd, offset, to_bytes(head_page_id))
+
+
+def set_tail_page_id(fd: int, tail_page_id: int) -> None:
+    offset = META_PAGE_ID * BYTES_PAGE + BYTES_MAGIC_NUMBER + BYTES_USED_PAGE_ID + BYTES_HEAD_PAGE_ID
+    file_update(fd, offset, to_bytes(tail_page_id))
+
+
+def set_root_page_id(fd: int, root_page_id: int) -> None:
+    offset = META_PAGE_ID * BYTES_PAGE + BYTES_MAGIC_NUMBER + BYTES_USED_PAGE_ID + BYTES_HEAD_PAGE_ID + BYTES_TAIL_PAGE_ID
     file_update(fd, offset, to_bytes(root_page_id))
