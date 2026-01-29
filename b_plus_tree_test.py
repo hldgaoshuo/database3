@@ -39,7 +39,7 @@ def _show(node: BPlusTreeNode, count: int) -> None:
     print(f'{indent}left:{node.left_page_id} right:{node.right_page_id}')
     if not node.is_leaf:
         for page_id in node.page_ids:
-            child = new_b_plus_tree_node_from_page_id(node.fd, node.id_generator, page_id)
+            child = new_b_plus_tree_node_from_page_id(node.fd, node.free_list, page_id)
             _show(child, count + 1)
     else:
         print(f'{indent}left:{node.left_page_id} right:{node.right_page_id}')
@@ -59,57 +59,36 @@ def test_set_1():
 
 def test_set_2():
     fd, b_plus_tree = init()
-    b_plus_tree[b'1'] = b'1'
-    b_plus_tree[b'2'] = b'2'
-    b_plus_tree[b'3'] = b'3'
+    for o in [b'1', b'2', b'3']:
+        b_plus_tree[o] = o
     close(fd)
 
 
 def test_set_3():
     fd, b_plus_tree = init()
-    b_plus_tree[b'1'] = b'1'
-    b_plus_tree[b'2'] = b'2'
-    b_plus_tree[b'3'] = b'3'
-    b_plus_tree[b'4'] = b'4'
+    for o in [b'1', b'2', b'3', b'4']:
+        b_plus_tree[o] = o
     close(fd)
 
 
 def test_set_4():
     fd, b_plus_tree = init()
-    b_plus_tree[b'1'] = b'1'
-    b_plus_tree[b'2'] = b'2'
-    b_plus_tree[b'3'] = b'3'
-    b_plus_tree[b'4'] = b'4'
-    b_plus_tree[b'5'] = b'5'
-    b_plus_tree[b'6'] = b'6'
+    for o in [b'1', b'2', b'3', b'4', b'5', b'6']:
+        b_plus_tree[o] = o
     close(fd)
 
 
 def test_set_5():
     fd, b_plus_tree = init()
-    b_plus_tree[b'1'] = b'1'
-    b_plus_tree[b'2'] = b'2'
-    b_plus_tree[b'3'] = b'3'
-    b_plus_tree[b'4'] = b'4'
-    b_plus_tree[b'5'] = b'5'
-    b_plus_tree[b'6'] = b'6'
-    b_plus_tree[b'7'] = b'7'
-    b_plus_tree[b'8'] = b'8'
+    for o in [b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8']:
+        b_plus_tree[o] = o
     close(fd)
 
 
 def test_set_6():
     fd, b_plus_tree = init()
-    b_plus_tree[b'a'] = b'a'
-    b_plus_tree[b'b'] = b'b'
-    b_plus_tree[b'c'] = b'c'
-    b_plus_tree[b'd'] = b'd'
-    b_plus_tree[b'e'] = b'e'
-    b_plus_tree[b'f'] = b'f'
-    b_plus_tree[b'g'] = b'g'
-    b_plus_tree[b'h'] = b'h'
-    b_plus_tree[b'i'] = b'i'
-    b_plus_tree[b'j'] = b'j'
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j']:
+        b_plus_tree[o] = o
     show(b_plus_tree.root)
     close(fd)
 
@@ -124,135 +103,58 @@ def test_get_1():
 
 def test_get_2():
     fd, b_plus_tree = init()
-    b_plus_tree[b'1'] = b'1'
-    b_plus_tree[b'2'] = b'2'
-    b_plus_tree[b'3'] = b'3'
-    r = b_plus_tree[b'1']
-    assert r == b'1'
-    r = b_plus_tree[b'2']
-    assert r == b'2'
-    r = b_plus_tree[b'3']
-    assert r == b'3'
+    for o in [b'1', b'2', b'3']:
+        b_plus_tree[o] = o
+    for o in [b'1', b'2', b'3']:
+        r = b_plus_tree[o]
+        assert r == o
     close(fd)
 
 
 def test_get_3():
     fd, b_plus_tree = init()
-    b_plus_tree[b'1'] = b'1'
-    b_plus_tree[b'2'] = b'2'
-    b_plus_tree[b'3'] = b'3'
-    b_plus_tree[b'4'] = b'4'
-    r = b_plus_tree[b'1']
-    assert r == b'1'
-    r = b_plus_tree[b'2']
-    assert r == b'2'
-    r = b_plus_tree[b'3']
-    assert r == b'3'
-    r = b_plus_tree[b'4']
-    assert r == b'4'
+    for o in [b'1', b'2', b'3', b'4']:
+        b_plus_tree[o] = o
+    for o in [b'1', b'2', b'3', b'4']:
+        r = b_plus_tree[o]
+        assert r == o
     close(fd)
 
 
 def test_get_4():
     fd, b_plus_tree = init()
-    b_plus_tree[b'1'] = b'1'
-    b_plus_tree[b'2'] = b'2'
-    b_plus_tree[b'3'] = b'3'
-    b_plus_tree[b'4'] = b'4'
-    b_plus_tree[b'5'] = b'5'
-    b_plus_tree[b'6'] = b'6'
-    r = b_plus_tree[b'1']
-    assert r == b'1'
-    r = b_plus_tree[b'2']
-    assert r == b'2'
-    r = b_plus_tree[b'3']
-    assert r == b'3'
-    r = b_plus_tree[b'4']
-    assert r == b'4'
-    r = b_plus_tree[b'5']
-    assert r == b'5'
-    r = b_plus_tree[b'6']
-    assert r == b'6'
+    for o in [b'1', b'2', b'3', b'4', b'5', b'6']:
+        b_plus_tree[o] = o
+    for o in [b'1', b'2', b'3', b'4', b'5', b'6']:
+        r = b_plus_tree[o]
+        assert r == o
     close(fd)
 
 
 def test_get_5():
     fd, b_plus_tree = init()
-    b_plus_tree[b'1'] = b'1'
-    b_plus_tree[b'2'] = b'2'
-    b_plus_tree[b'3'] = b'3'
-    b_plus_tree[b'4'] = b'4'
-    b_plus_tree[b'5'] = b'5'
-    b_plus_tree[b'6'] = b'6'
-    b_plus_tree[b'7'] = b'7'
-    b_plus_tree[b'8'] = b'8'
-    r = b_plus_tree[b'1']
-    assert r == b'1'
-    r = b_plus_tree[b'2']
-    assert r == b'2'
-    r = b_plus_tree[b'3']
-    assert r == b'3'
-    r = b_plus_tree[b'4']
-    assert r == b'4'
-    r = b_plus_tree[b'5']
-    assert r == b'5'
-    r = b_plus_tree[b'6']
-    assert r == b'6'
-    r = b_plus_tree[b'7']
-    assert r == b'7'
-    r = b_plus_tree[b'8']
-    assert r == b'8'
+    for o in [b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8']:
+        b_plus_tree[o] = o
+    for o in [b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8']:
+        r = b_plus_tree[o]
+        assert r == o
     close(fd)
 
 
 def test_get_6():
     fd, b_plus_tree = init()
-    b_plus_tree[b'a'] = b'a'
-    b_plus_tree[b'b'] = b'b'
-    b_plus_tree[b'c'] = b'c'
-    b_plus_tree[b'd'] = b'd'
-    b_plus_tree[b'e'] = b'e'
-    b_plus_tree[b'f'] = b'f'
-    b_plus_tree[b'g'] = b'g'
-    b_plus_tree[b'h'] = b'h'
-    b_plus_tree[b'i'] = b'i'
-    b_plus_tree[b'j'] = b'j'
-    r = b_plus_tree[b'a']
-    assert r == b'a'
-    r = b_plus_tree[b'b']
-    assert r == b'b'
-    r = b_plus_tree[b'c']
-    assert r == b'c'
-    r = b_plus_tree[b'd']
-    assert r == b'd'
-    r = b_plus_tree[b'e']
-    assert r == b'e'
-    r = b_plus_tree[b'f']
-    assert r == b'f'
-    r = b_plus_tree[b'g']
-    assert r == b'g'
-    r = b_plus_tree[b'h']
-    assert r == b'h'
-    r = b_plus_tree[b'i']
-    assert r == b'i'
-    r = b_plus_tree[b'j']
-    assert r == b'j'
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j']:
+        b_plus_tree[o] = o
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j']:
+        r = b_plus_tree[o]
+        assert r == o
     close(fd)
 
 
 def test_delete_1():
     fd, b_plus_tree = init()
-    b_plus_tree[b'a'] = b'a'
-    b_plus_tree[b'b'] = b'b'
-    b_plus_tree[b'c'] = b'c'
-    b_plus_tree[b'd'] = b'd'
-    b_plus_tree[b'e'] = b'e'
-    b_plus_tree[b'f'] = b'f'
-    b_plus_tree[b'g'] = b'g'
-    b_plus_tree[b'h'] = b'h'
-    b_plus_tree[b'i'] = b'i'
-    b_plus_tree[b'j'] = b'j'
-    b_plus_tree[b'k'] = b'k'
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree[o] = o
     show(b_plus_tree.root)
     del b_plus_tree[b'k']
     show(b_plus_tree.root)
@@ -261,108 +163,109 @@ def test_delete_1():
 
 def test_delete_2():
     fd, b_plus_tree = init()
-    b_plus_tree[b'a'] = b'a'
-    b_plus_tree[b'b'] = b'b'
-    b_plus_tree[b'c'] = b'c'
-    b_plus_tree[b'd'] = b'd'
-    b_plus_tree[b'e'] = b'e'
-    b_plus_tree[b'f'] = b'f'
-    b_plus_tree[b'g'] = b'g'
-    b_plus_tree[b'h'] = b'h'
-    b_plus_tree[b'i'] = b'i'
-    b_plus_tree[b'j'] = b'j'
-    b_plus_tree[b'k'] = b'k'
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree[o] = o
     show(b_plus_tree.root)
-    del b_plus_tree[b'k']
-    del b_plus_tree[b'j']
+    for o in [b'k', b'j']:
+        del b_plus_tree[o]
     show(b_plus_tree.root)
 
 
 def test_delete_3():
     fd, b_plus_tree = init()
-    b_plus_tree[b'a'] = b'a'
-    b_plus_tree[b'b'] = b'b'
-    b_plus_tree[b'c'] = b'c'
-    b_plus_tree[b'd'] = b'd'
-    b_plus_tree[b'e'] = b'e'
-    b_plus_tree[b'f'] = b'f'
-    b_plus_tree[b'g'] = b'g'
-    b_plus_tree[b'h'] = b'h'
-    b_plus_tree[b'i'] = b'i'
-    b_plus_tree[b'j'] = b'j'
-    b_plus_tree[b'k'] = b'k'
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree[o] = o
     show(b_plus_tree.root)
-    del b_plus_tree[b'k']
-    del b_plus_tree[b'j']
-    del b_plus_tree[b'i']
+    for o in [b'k', b'j', b'i']:
+        del b_plus_tree[o]
     show(b_plus_tree.root)
     close(fd)
 
 
 def test_delete_4():
     fd, b_plus_tree = init()
-    b_plus_tree[b'a'] = b'a'
-    b_plus_tree[b'b'] = b'b'
-    b_plus_tree[b'c'] = b'c'
-    b_plus_tree[b'd'] = b'd'
-    b_plus_tree[b'e'] = b'e'
-    b_plus_tree[b'f'] = b'f'
-    b_plus_tree[b'g'] = b'g'
-    b_plus_tree[b'h'] = b'h'
-    b_plus_tree[b'i'] = b'i'
-    b_plus_tree[b'j'] = b'j'
-    b_plus_tree[b'k'] = b'k'
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree[o] = o
     show(b_plus_tree.root)
-    del b_plus_tree[b'k']
-    del b_plus_tree[b'j']
-    del b_plus_tree[b'i']
-    del b_plus_tree[b'h']
+    for o in [b'k', b'j', b'i', b'h']:
+        del b_plus_tree[o]
     show(b_plus_tree.root)
     close(fd)
 
 
 def test_delete_5():
     fd, b_plus_tree = init()
-    b_plus_tree[b'a'] = b'a'
-    b_plus_tree[b'b'] = b'b'
-    b_plus_tree[b'c'] = b'c'
-    b_plus_tree[b'd'] = b'd'
-    b_plus_tree[b'e'] = b'e'
-    b_plus_tree[b'f'] = b'f'
-    b_plus_tree[b'g'] = b'g'
-    b_plus_tree[b'h'] = b'h'
-    b_plus_tree[b'i'] = b'i'
-    b_plus_tree[b'j'] = b'j'
-    b_plus_tree[b'k'] = b'k'
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree[o] = o
     show(b_plus_tree.root)
-    del b_plus_tree[b'k']
-    del b_plus_tree[b'j']
-    del b_plus_tree[b'i']
-    del b_plus_tree[b'h']
-    del b_plus_tree[b'g']
+    for o in [b'k', b'j', b'i', b'h', b'g']:
+        del b_plus_tree[o]
     show(b_plus_tree.root)
     close(fd)
 
 
 def test_delete_6():
     fd, b_plus_tree = init()
-    b_plus_tree[b'a'] = b'a'
-    b_plus_tree[b'b'] = b'b'
-    b_plus_tree[b'c'] = b'c'
-    b_plus_tree[b'd'] = b'd'
-    b_plus_tree[b'e'] = b'e'
-    b_plus_tree[b'f'] = b'f'
-    b_plus_tree[b'g'] = b'g'
-    b_plus_tree[b'h'] = b'h'
-    b_plus_tree[b'i'] = b'i'
-    b_plus_tree[b'j'] = b'j'
-    b_plus_tree[b'k'] = b'k'
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree[o] = o
     show(b_plus_tree.root)
-    del b_plus_tree[b'k']
-    del b_plus_tree[b'j']
-    del b_plus_tree[b'i']
-    del b_plus_tree[b'h']
-    del b_plus_tree[b'g']
-    del b_plus_tree[b'f']
+    for o in [b'k', b'j', b'i', b'h', b'g', b'f']:
+        del b_plus_tree[o]
     show(b_plus_tree.root)
     close(fd)
+
+
+def test_delete_7():
+    fd, b_plus_tree = init()
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree[o] = o
+    show(b_plus_tree.root)
+    for o in [b'k', b'j', b'i', b'h', b'g', b'f', b'e']:
+        del b_plus_tree[o]
+    show(b_plus_tree.root)
+    close(fd)
+
+
+def test_delete_8():
+    fd, b_plus_tree = init()
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree[o] = o
+    show(b_plus_tree.root)
+    for o in [b'k', b'j', b'i', b'h', b'g', b'f', b'e', b'd']:
+        del b_plus_tree[o]
+    show(b_plus_tree.root)
+    close(fd)
+
+
+def test_delete_9():
+    fd, b_plus_tree = init()
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree[o] = o
+    show(b_plus_tree.root)
+    for o in [b'k', b'j', b'i', b'h', b'g', b'f', b'e', b'd', b'c']:
+        del b_plus_tree[o]
+    show(b_plus_tree.root)
+    close(fd)
+
+
+def test_delete_10():
+    fd, b_plus_tree = init()
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree[o] = o
+    show(b_plus_tree.root)
+    for o in [b'k', b'j', b'i', b'h', b'g', b'f', b'e', b'd', b'c', b'b']:
+        del b_plus_tree[o]
+    show(b_plus_tree.root)
+    close(fd)
+
+
+def test_delete_11():
+    fd, b_plus_tree = init()
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree[o] = o
+    show(b_plus_tree.root)
+    for o in [b'k', b'j', b'i', b'h', b'g', b'f', b'e', b'd', b'c', b'b', b'a']:
+        del b_plus_tree[o]
+    show(b_plus_tree.root)
+    close(fd)
+
