@@ -2,7 +2,7 @@ import io
 
 from const import NULL_PAGE_ID, NUM_PAGE_IDS
 from file import get_page, set_page, set_used_page_id, set_tail_page_id, set_head_page_id
-from utils import to_bytes, from_bytes
+from utils import to_bytes, from_buf
 
 
 class PageIdGenerator:
@@ -68,13 +68,13 @@ def new_free_list_node(fd: int, page_id: int, next_page_id: int) -> FreeListNode
 def new_free_list_node_from_page_id(fd: int, page_id: int) -> FreeListNode:
     bs = get_page(fd, page_id)
     buf = io.BytesIO(bs)
-    _page_id = from_bytes(buf, int)
+    _page_id = from_buf(buf, int)
     if _page_id != page_id:
         raise ValueError("page_id 错误")
-    next_page_id = from_bytes(buf, int)
-    unused = from_bytes(buf, int)
-    num_page_ids = from_bytes(buf, int)
-    page_ids = [from_bytes(buf, int) for _ in range(num_page_ids)]
+    next_page_id = from_buf(buf, int)
+    unused = from_buf(buf, int)
+    num_page_ids = from_buf(buf, int)
+    page_ids = [from_buf(buf, int) for _ in range(num_page_ids)]
     node = FreeListNode(fd, page_id, next_page_id)
     node.unused = unused
     node.page_ids = page_ids
@@ -150,6 +150,7 @@ def new_free_list(fd: int, init_page_id: int) -> FreeList:
     page_id_generator = new_page_id_generator(fd, init_page_id)
     head_page_id = page_id_generator.get_next_page_id()
     head = new_free_list_node(fd, head_page_id, NULL_PAGE_ID)
+    head.persist()
     set_head_page_id(fd, head.page_id)
     set_tail_page_id(fd, head.page_id)
     node = FreeList(fd, page_id_generator, head, head)

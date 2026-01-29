@@ -1,14 +1,33 @@
 import io
-
-from b_plus_tree import BPlusTree, new_b_plus_tree, new_b_plus_tree_from_root_page_id
-from free_list import new_free_list, new_free_list_from_page_id
+from b_plus_tree import BPlusTree, new_b_plus_tree_from_root_page_id, new_b_plus_tree
 from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS
 from file import file_open, get_page, set_magic_number
-from utils import from_buf
+from free_list import new_free_list_from_page_id, new_free_list
+from utils import from_buf, to_bytes
 
 
-def init() -> BPlusTree:
-    fd = file_open('test.db')
+class KV:
+
+    def __init__(self, fd: int, b_plus_tree: BPlusTree):
+        self.fd: int = fd
+        self.b_plus_tree: BPlusTree = b_plus_tree
+
+    def __getitem__(self, item):
+        _item = to_bytes(item)
+        return self.b_plus_tree[_item]
+
+    def __setitem__(self, key, value):
+        _key = to_bytes(key)
+        _value = to_bytes(value)
+        self.b_plus_tree[_key] = _value
+
+    def __delitem__(self, key):
+        _key = to_bytes(key)
+        del self.b_plus_tree[_key]
+
+
+def new_kv(name: str) -> KV:
+    fd = file_open(f'{name}.db')
     meta_bs = get_page(fd, META_PAGE_ID)
     meta_buf = io.BytesIO(meta_bs)
     magic_number_bs = meta_buf.read(BYTES_MAGIC_NUMBER)
@@ -23,12 +42,5 @@ def init() -> BPlusTree:
         set_magic_number(fd)
         free_list = new_free_list(fd, META_PAGE_ID)
         b_plus_tree = new_b_plus_tree(fd, free_list)
-    return b_plus_tree
-
-
-def __main():
-    tree = init()
-
-
-if __name__ == '__main__':
-    __main()
+    kv = KV(fd, b_plus_tree)
+    return kv

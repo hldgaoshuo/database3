@@ -17,7 +17,7 @@ def to_bytes(value: int | bool | bytes | str) -> bytes:
         raise ValueError(f"to_bytes() 不支持 {type(value)} 类型")
 
 
-def from_bytes(buf: io.BytesIO, type_: type) -> int | bool | bytes | str:
+def from_buf(buf: io.BytesIO, type_: type) -> int | bool | bytes | str:
     if type_ is int:
         bs = buf.read(4)
         return int.from_bytes(bytes=bs, byteorder="big", signed=True)
@@ -36,3 +36,8 @@ def from_bytes(buf: io.BytesIO, type_: type) -> int | bool | bytes | str:
         return value_bs.decode("utf-8")
     else:
         raise ValueError(f"from_bytes() 不支持 {type_} 类型")
+
+
+def from_bytes(bytes_: bytes, type_: type) -> int | bool | bytes | str:
+    buf = io.BytesIO(bytes_)
+    return from_buf(buf, type_)

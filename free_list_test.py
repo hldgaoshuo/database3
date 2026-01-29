@@ -1,9 +1,8 @@
-import os
 import io
 from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS, NULL_PAGE_ID
 from file import file_open, get_page, set_magic_number
 from free_list import FreeList, new_free_list, new_free_list_from_page_id
-from utils import from_bytes
+from utils import from_buf
 
 
 def init() -> FreeList:
@@ -12,10 +11,10 @@ def init() -> FreeList:
     meta_buf = io.BytesIO(meta_bs)
     magic_number_bs = meta_buf.read(BYTES_MAGIC_NUMBER)
     if magic_number_bs == MAGIC_NUMBER_BS:
-        used_page_id = from_bytes(meta_buf, int)
-        from_bytes(meta_buf, int)  # skip root_page_id
-        head_page_id = from_bytes(meta_buf, int)
-        tail_page_id = from_bytes(meta_buf, int)
+        used_page_id = from_buf(meta_buf, int)
+        from_buf(meta_buf, int)  # skip root_page_id
+        head_page_id = from_buf(meta_buf, int)
+        tail_page_id = from_buf(meta_buf, int)
         free_list = new_free_list_from_page_id(fd, used_page_id, head_page_id, tail_page_id)
     else:
         set_magic_number(fd)

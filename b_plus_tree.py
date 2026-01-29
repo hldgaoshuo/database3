@@ -3,7 +3,7 @@ import io
 from const import NULL_PAGE_ID, DEGREE
 from file import get_page, set_page, set_root_page_id
 from free_list import FreeList
-from utils import to_bytes, from_bytes
+from utils import to_bytes, from_buf
 
 
 class BPlusTreeNode:
@@ -299,23 +299,23 @@ def new_b_plus_tree_node_from_page_id(fd: int, free_list: FreeList, page_id: int
     page = get_page(fd, page_id)
     buf = io.BytesIO(page)
     # 读取节点信息
-    is_leaf = from_bytes(buf, bool)
-    _page_id = from_bytes(buf, int)
+    is_leaf = from_buf(buf, bool)
+    _page_id = from_buf(buf, int)
     if _page_id != page_id:
         raise ValueError("page_id 错误")
-    left_page_id = from_bytes(buf, int)
-    right_page_id = from_bytes(buf, int)
-    num_keys = from_bytes(buf, int)
-    keys = [from_bytes(buf, bytes) for _ in range(num_keys)]
+    left_page_id = from_buf(buf, int)
+    right_page_id = from_buf(buf, int)
+    num_keys = from_buf(buf, int)
+    keys = [from_buf(buf, bytes) for _ in range(num_keys)]
     if is_leaf:
-        num_vals = from_bytes(buf, int)
-        vals = [from_bytes(buf, bytes) for _ in range(num_vals)]
+        num_vals = from_buf(buf, int)
+        vals = [from_buf(buf, bytes) for _ in range(num_vals)]
         node = BPlusTreeNode(fd, free_list, is_leaf, page_id, left_page_id, right_page_id)
         node.keys = keys
         node.vals = vals
     else:
-        num_page_ids = from_bytes(buf, int)
-        page_ids = [from_bytes(buf, int) for _ in range(num_page_ids)]
+        num_page_ids = from_buf(buf, int)
+        page_ids = [from_buf(buf, int) for _ in range(num_page_ids)]
         node = BPlusTreeNode(fd, free_list, is_leaf, page_id, left_page_id, right_page_id)
         node.keys = keys
         node.page_ids = page_ids
@@ -360,6 +360,7 @@ class BPlusTree:
 
 def new_b_plus_tree(fd: int, free_list: FreeList) -> BPlusTree:
     root = new_b_plus_tree_node(fd, free_list, True)
+    root.persist()
     set_root_page_id(fd, root.page_id)
     return BPlusTree(fd, free_list, root)
 
