@@ -35,7 +35,7 @@ def from_buf(buf: io.BytesIO, type_: type) -> int | bool | bytes | str:
         value_bs = buf.read(length)
         return value_bs.decode("utf-8")
     else:
-        raise ValueError(f"from_bytes() 不支持 {type_} 类型")
+        raise ValueError(f"from_xxx() 不支持 {type_} 类型")
 
 
 def from_bytes(bytes_: bytes, type_: type) -> int | bool | bytes | str:
