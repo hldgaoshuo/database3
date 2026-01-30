@@ -28,6 +28,7 @@ class KV:
 
 def new_kv(name: str) -> KV:
     fd = file_open(f'{name}.db')
+    seq = 0  # kv only have one b plus tree
     meta_bs = get_page(fd, META_PAGE_ID)
     meta_buf = io.BytesIO(meta_bs)
     magic_number_bs = meta_buf.read(BYTES_MAGIC_NUMBER)
@@ -37,10 +38,10 @@ def new_kv(name: str) -> KV:
         tail_page_id = from_buf(meta_buf, int)
         free_list = new_free_list_from_page_id(fd, used_page_id, head_page_id, tail_page_id)
         root_page_id = from_buf(meta_buf, int)
-        b_plus_tree = new_b_plus_tree_from_root_page_id(fd, free_list, root_page_id)
+        b_plus_tree = new_b_plus_tree_from_root_page_id(fd, seq, free_list, root_page_id)
     else:
         set_magic_number(fd)
         free_list = new_free_list(fd, META_PAGE_ID)
-        b_plus_tree = new_b_plus_tree(fd, free_list)
+        b_plus_tree = new_b_plus_tree(fd, seq, free_list)
     kv = KV(fd, b_plus_tree)
     return kv

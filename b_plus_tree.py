@@ -324,8 +324,9 @@ def new_b_plus_tree_node_from_page_id(fd: int, free_list: FreeList, page_id: int
 
 class BPlusTree:
 
-    def __init__(self, fd: int, free_list: FreeList, root: BPlusTreeNode):
+    def __init__(self, fd: int, seq: int, free_list: FreeList, root: BPlusTreeNode):
         self.fd: int = fd
+        self.seq: int = seq
         self.free_list: FreeList = free_list
         self.root: BPlusTreeNode = root
 
@@ -345,7 +346,7 @@ class BPlusTree:
             child_new = child.split()
             new_root.page_ids.append(child_new.page_id)
             new_root.persist()
-            set_root_page_id(self.fd, new_root.page_id)
+            set_root_page_id(self.fd, self.seq, new_root.page_id)
             self.root = new_root
         self.root[key] = val
 
@@ -354,17 +355,17 @@ class BPlusTree:
         if self.root.is_empty() and not self.root.is_leaf:
             page_id = self.root.page_ids[0]
             new_root = new_b_plus_tree_node_from_page_id(self.fd, self.free_list, page_id)
-            set_root_page_id(self.fd, new_root.page_id)
+            set_root_page_id(self.fd, self.seq, new_root.page_id)
             self.root = new_root
 
 
-def new_b_plus_tree(fd: int, free_list: FreeList) -> BPlusTree:
+def new_b_plus_tree(fd: int, seq: int, free_list: FreeList) -> BPlusTree:
     root = new_b_plus_tree_node(fd, free_list, True)
     root.persist()
-    set_root_page_id(fd, root.page_id)
-    return BPlusTree(fd, free_list, root)
+    set_root_page_id(fd, seq, root.page_id)
+    return BPlusTree(fd, seq, free_list, root)
 
 
-def new_b_plus_tree_from_root_page_id(fd: int, free_list: FreeList, root_page_id: int) -> BPlusTree:
+def new_b_plus_tree_from_root_page_id(fd: int, seq: int, free_list: FreeList, root_page_id: int) -> BPlusTree:
     root = new_b_plus_tree_node_from_page_id(fd, free_list, root_page_id)
-    return BPlusTree(fd, free_list, root)
+    return BPlusTree(fd, seq, free_list, root)
