@@ -89,12 +89,14 @@ class FreeList:
         self.head: FreeListNode = head
         self.tail: FreeListNode = tail
 
+    # 对外暴露使用
     def get_page_id(self) -> int:
         page_id = self.get_unused_page_id()
         if page_id == NULL_PAGE_ID:
             page_id = self.page_id_generator.get_next_page_id()
         return page_id
 
+    # 对外暴露使用
     def add_page_id(self, page_id: int) -> None:
         self.add_unused_page_id(page_id)
 
@@ -153,13 +155,13 @@ def new_free_list(fd: int, init_page_id: int) -> FreeList:
     head.persist()
     set_head_page_id(fd, head.page_id)
     set_tail_page_id(fd, head.page_id)
-    node = FreeList(fd, page_id_generator, head, head)
-    return node
+    free_list = FreeList(fd, page_id_generator, head, head)
+    return free_list
 
 
 def new_free_list_from_page_id(fd: int, init_page_id: int, head_page_id: int, tail_page_id: int) -> FreeList:
     page_id_generator = new_page_id_generator(fd, init_page_id)
     head = new_free_list_node_from_page_id(fd, head_page_id)
     tail = new_free_list_node_from_page_id(fd, tail_page_id)
-    node = FreeList(fd, page_id_generator, head, tail)
-    return node
+    free_list = FreeList(fd, page_id_generator, head, tail)
+    return free_list

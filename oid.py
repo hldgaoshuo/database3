@@ -1,6 +1,7 @@
 import threading
 
 
+# todo oid 的实现错误，需要重新设计，可以考虑 snowflake 的设计思路
 class OIDGenerator:
 
     def __init__(self):
