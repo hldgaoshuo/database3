@@ -18,7 +18,10 @@ class Bool(Value):
 
     def __eq__(self, other: 'Bool'):
         return self.val_type == other.val_type and self.val == other.val
-
+    
+    def show(self):
+        print(f"Bool({self.val})", end="")
+        
 
 def new_bool(val: bool):
     r = Bool(val)

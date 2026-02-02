@@ -5,3 +5,6 @@ class Value:
 
     def __eq__(self, other):
         raise NotImplementedError
+
+    def show(self):
+        raise NotImplementedError

@@ -19,6 +19,9 @@ class Int(Value):
     def __eq__(self, other: 'Int'):
         return self.val_type == other.val_type and self.val == other.val
 
+    def show(self):
+        print(f"Int({self.val})", end="")
+
 
 def new_int(val: int):
     r = Int(val)

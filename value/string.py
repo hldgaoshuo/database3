@@ -19,6 +19,9 @@ class String(Value):
     def __eq__(self, other: 'String'):
         return self.val_type == other.val_type and self.val == other.val
 
+    def show(self):
+        print(f"String({self.val})", end="")
+
 
 def new_string(val: str):
     r = String(val)

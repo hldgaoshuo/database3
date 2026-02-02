@@ -46,16 +46,16 @@ class Table:
             r += to_bytes(col_type)
         return r
 
+    def set(self, key: Value, row: Row):
+        _key = bytes(key)
+        _row = bytes(row)
+        self.b_plus_tree[_key] = _row
+
     def get(self, key: Value) -> Row:
         _key = bytes(key)
         val = self.b_plus_tree[_key]
         row = new_row_from_bytes(val)
         return row
-
-    def set(self, key: Value, row: Row):
-        _key = bytes(key)
-        _row = bytes(row)
-        self.b_plus_tree[_key] = _row
 
     def delete(self, key: Value):
         _key = bytes(key)

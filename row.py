@@ -29,6 +29,12 @@ class Row:
                 return False
         return True
 
+    def show(self):
+        print()
+        for val in self.vals:
+            val.show()
+            print(" ", end="")
+
 
 def new_row(oid: int, vals: list[Value]):
     r = Row(oid, vals)
