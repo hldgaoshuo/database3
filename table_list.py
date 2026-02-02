@@ -4,6 +4,8 @@ from b_plus_tree import BPlusTree, new_b_plus_tree, new_b_plus_tree_from_root_pa
 from const import NUM_TABLE, NULL_PAGE_ID
 from file import set_table_seq, get_root_page_id, set_page, get_page, set_table_tail_page_id, set_table_head_page_id
 from free_list import FreeList
+from row import new_row_from_bytes, Row
+from value.value import Value
 from utils import to_bytes, from_buf
 
 
@@ -43,6 +45,21 @@ class Table:
         for col_type in self.col_types:
             r += to_bytes(col_type)
         return r
+
+    def get(self, key: Value) -> Row:
+        _key = bytes(key)
+        val = self.b_plus_tree[_key]
+        row = new_row_from_bytes(val)
+        return row
+
+    def set(self, key: Value, row: Row):
+        _key = bytes(key)
+        _row = bytes(row)
+        self.b_plus_tree[_key] = _row
+
+    def delete(self, key: Value):
+        _key = bytes(key)
+        del self.b_plus_tree[_key]
 
 
 def new_table(fd: int, free_list: FreeList, name: str, seq: int, col_names: list[str], col_types: list[int]) -> Table:
@@ -131,6 +148,15 @@ class TableList:
         self.tail = new_tail
         set_table_tail_page_id(self.fd, new_tail.page_id)
         return
+
+    def get_tables(self) -> dict[str, Table]:
+        tables = {}
+        node = self.head
+        while node.page_id != NULL_PAGE_ID:
+            for table in node.tables:
+                tables[table.name] = table
+            node = new_table_list_node_from_page_id(self.fd, self.free_list, node.next_page_id)
+        return tables
 
 
 def new_table_list(fd: int, free_list: FreeList) -> TableList:
