@@ -1,5 +1,3 @@
-import io
-
 from const import NULL_PAGE_ID, NUM_PAGE_IDS
 from file import get_page, set_page, set_used_page_id, set_tail_page_id, set_head_page_id
 from utils import to_bytes, from_buf
@@ -66,8 +64,7 @@ def new_free_list_node(fd: int, page_id: int, next_page_id: int) -> FreeListNode
 
 
 def new_free_list_node_from_page_id(fd: int, page_id: int) -> FreeListNode:
-    bs = get_page(fd, page_id)
-    buf = io.BytesIO(bs)
+    buf = get_page(fd, page_id)
     _page_id = from_buf(buf, int)
     if _page_id != page_id:
         raise ValueError("page_id 错误")

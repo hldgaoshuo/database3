@@ -1,3 +1,4 @@
+import pytest
 from oid import get_oid
 from row import new_row, new_row_from_bytes
 from value.bool import new_bool
@@ -27,3 +28,8 @@ def test_from_bytes():
     )
     want = new_row(get_oid(), [new_int(2), new_string("a"), new_bool(True)])
     assert got == want
+
+
+if __name__ == "__main__":
+    pytest.main([__file__])
+

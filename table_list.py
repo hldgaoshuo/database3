@@ -95,8 +95,7 @@ def new_table_list_node(fd: int, page_id: int, next_page_id: int) -> TableListNo
 
 
 def new_table_list_node_from_page_id(fd: int, free_list: FreeList, page_id: int) -> TableListNode:
-    bs = get_page(fd, page_id)
-    buf = io.BytesIO(bs)
+    buf = get_page(fd, page_id)
     _page_id = from_buf(buf, int)
     if _page_id != page_id:
         raise ValueError("page_id 错误")

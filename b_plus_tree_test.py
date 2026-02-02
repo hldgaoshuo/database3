@@ -1,5 +1,4 @@
 import inspect
-import io
 import os
 import pytest
 
@@ -13,15 +12,17 @@ from utils import from_buf
 def init(name: str) -> tuple[int, BPlusTree]:
     fd = file_open(f'{name}.db')
     seq = 0
-    meta_bs = get_page(fd, META_PAGE_ID)
-    meta_buf = io.BytesIO(meta_bs)
-    magic_number_bs = meta_buf.read(BYTES_MAGIC_NUMBER)
+    meta = get_page(fd, META_PAGE_ID)
+    magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
     if magic_number_bs == MAGIC_NUMBER_BS:
-        used_page_id = from_buf(meta_buf, int)
-        head_page_id = from_buf(meta_buf, int)
-        tail_page_id = from_buf(meta_buf, int)
+        used_page_id = from_buf(meta, int)
+        head_page_id = from_buf(meta, int)
+        tail_page_id = from_buf(meta, int)
         free_list = new_free_list_from_page_id(fd, used_page_id, head_page_id, tail_page_id)
-        root_page_id = from_buf(meta_buf, int)
+        from_buf(meta, int)  # table_seq
+        from_buf(meta, int)  # table_head_page_id
+        from_buf(meta, int)  # table_tail_page_id
+        root_page_id = from_buf(meta, int)
         b_plus_tree = new_b_plus_tree_from_root_page_id(fd, seq, free_list, root_page_id)
     else:
         set_magic_number(fd)

@@ -296,8 +296,7 @@ def new_b_plus_tree_node(fd: int, free_list: FreeList, is_leaf: bool) -> BPlusTr
 
 
 def new_b_plus_tree_node_from_page_id(fd: int, free_list: FreeList, page_id: int) -> BPlusTreeNode:
-    page = get_page(fd, page_id)
-    buf = io.BytesIO(page)
+    buf = get_page(fd, page_id)
     # 读取节点信息
     is_leaf = from_buf(buf, bool)
     _page_id = from_buf(buf, int)

@@ -1,3 +1,4 @@
+import io
 import os
 
 from const import BYTES_PAGE, META_PAGE_ID, MAGIC_NUMBER_BS, BYTES_USED_PAGE_ID, BYTES_MAGIC_NUMBER, BYTES_TAIL_PAGE_ID, \
@@ -22,10 +23,11 @@ def file_update(fd: int, offset: int, data: bytes) -> None:
     os.fsync(fd)
 
 
-def get_page(fd: int, page_id: int) -> bytes:
+def get_page(fd: int, page_id: int) -> io.BytesIO:
     offset = page_id * BYTES_PAGE
     page_bs = file_read(fd, offset, BYTES_PAGE)
-    return page_bs
+    page_buf = io.BytesIO(page_bs)
+    return page_buf
 
 
 def set_page(fd: int, page_id: int, page_bs: bytes) -> None:
