@@ -1,10 +1,11 @@
 import inspect
+import os
 from b_plus_tree import new_b_plus_tree_from_root_page_id, new_b_plus_tree
 from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS
 from file import file_open, get_page, set_magic_number
 from free_list import new_free_list_from_page_id, new_free_list
 from row import new_row
-from table_list import Table
+from table_list import Table, TableSeqGenerator, new_table_seq_generator
 from utils import from_buf
 from value.const import VALUE_TYPE_STRING, VALUE_TYPE_INT
 from value.int import new_int
@@ -36,6 +37,11 @@ def init_table(name: str) -> tuple[int, Table]:
     return fd, table
 
 
+def close_table(fd: int, name: str) -> None:
+    os.close(fd)
+    os.remove(f'{name}.db')
+
+
 def test_table():
     name = inspect.currentframe().f_code.co_name
     fd, table = init_table(name)
@@ -44,3 +50,31 @@ def test_table():
     table.set(key, row)
     row = table.get(key)
     row.show()
+    close_table(fd, name)
+
+
+def init_table_seq_gen(name: str) -> tuple[int, TableSeqGenerator]:
+    fd = file_open(f'{name}.db')
+    meta = get_page(fd, META_PAGE_ID)
+    magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
+    if magic_number_bs == MAGIC_NUMBER_BS:
+        from_buf(meta, int)  # used_page_id
+        from_buf(meta, int)  # head_page_id
+        from_buf(meta, int)  # tail_page_id
+        table_seq = from_buf(meta, int)
+        from_buf(meta, int)  # table_head_page_id
+        from_buf(meta, int)  # table_tail_page_id
+    else:
+        set_magic_number(fd)
+        table_seq = 0
+    table_seq_gen = new_table_seq_generator(fd, table_seq)
+    return fd, table_seq_gen
+
+
+def test_table_seq_gen():
+    name = inspect.currentframe().f_code.co_name
+    fd, table_seq_gen = init_table_seq_gen(name)
+    print()
+    for _ in range(5):
+        r = table_seq_gen.get_next_seq()
+        print(r)
