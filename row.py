@@ -1,5 +1,5 @@
 import io
-from utils import to_bytes, from_buf
+from utils import Int64, to_bytes, from_buf
 from value.bool import new_bool_from_buf
 from value.const import VALUE_TYPE_INT, VALUE_TYPE_STRING, VALUE_TYPE_BOOL
 from value.int import new_int_from_buf
@@ -9,8 +9,8 @@ from value.value import Value
 
 class Row:
 
-    def __init__(self, oid: int, vals: list[Value]):
-        self.oid: int = oid
+    def __init__(self, oid: Int64, vals: list[Value]):
+        self.oid: Int64 = oid
         self.vals: list[Value] = vals
 
     def __bytes__(self):
@@ -36,13 +36,13 @@ class Row:
             print(" ", end="")
 
 
-def new_row(oid: int, vals: list[Value]):
+def new_row(oid: Int64, vals: list[Value]):
     r = Row(oid, vals)
     return r
 
 
 def new_row_from_buf(buf: io.BytesIO) -> Row:
-    oid = from_buf(buf, int)
+    oid = from_buf(buf, Int64)
     num_vals = from_buf(buf, int)
     vals = []
     for _ in range(num_vals):

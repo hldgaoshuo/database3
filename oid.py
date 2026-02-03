@@ -1,22 +1,7 @@
-import threading
-
-
-# todo oid 的实现错误，需要重新设计，可以考虑 snowflake 的设计思路
-class OIDGenerator:
-
-    def __init__(self):
-        self.id_: int = 1
-        self.lock: threading.Lock = threading.Lock()
-
-    def get_oid(self):
-        with self.lock:
-            r = self.id_
-            self.id_ += 1
-            return r
-
-
-default_oid_generator = OIDGenerator()
+import time
+from utils import Int64
 
 
 def get_oid():
-    return default_oid_generator.get_oid()
+    timestamp_ms = int(time.time() * 1000)
+    return Int64(timestamp_ms)
