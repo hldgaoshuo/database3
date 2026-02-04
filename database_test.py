@@ -3,7 +3,7 @@ from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS
 from database import Database, new_database_from_meta, new_database
 from file import file_open, get_page, set_magic_number
 from row import new_row
-from utils import Int64
+from utils import Int64, new_int64
 from value.const import VALUE_TYPE_STRING, VALUE_TYPE_INT
 from value.int import new_int
 from value.string import new_string
@@ -37,8 +37,8 @@ def test_set():
     table_col_names = ["name", "gender", "score"]
     table_col_types = [VALUE_TYPE_STRING, VALUE_TYPE_STRING, VALUE_TYPE_INT]
     db.create(table_name, table_col_names, table_col_types)
-    key = new_int(10)
-    row = new_row(Int64(100), [new_string("xiaoming"), new_string("m"), new_int(90)])
+    key = new_int64(10)
+    row = new_row(new_int64(10), [new_string("xiaoming"), new_string("m"), new_int(90)])
     db.set(table_name, key, row)
 
 
@@ -49,8 +49,8 @@ def test_get():
     table_col_names = ["name", "gender", "score"]
     table_col_types = [VALUE_TYPE_STRING, VALUE_TYPE_STRING, VALUE_TYPE_INT]
     db.create(table_name, table_col_names, table_col_types)
-    key = new_int(10)
-    row = new_row(Int64(100), [new_string("xiaoming"), new_string("m"), new_int(90)])
+    key = new_int64(10)
+    row = new_row(new_int64(10), [new_string("xiaoming"), new_string("m"), new_int(90)])
     db.set(table_name, key, row)
     result = db.get(table_name, key)
     result.show()

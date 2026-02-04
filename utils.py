@@ -1,7 +1,8 @@
 import io
+from value.value import Value
 
 
-class Int64:
+class Int64(Value):
 
     def __init__(self, val: int):
         self.val: int = val

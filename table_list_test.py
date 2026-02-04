@@ -7,7 +7,7 @@ from free_list import FreeList, new_free_list_from_page_id, new_free_list
 from row import new_row
 from table_list import Table, TableSeqGenerator, new_table_seq_generator, TableList, new_table_list_from_page_id, \
     new_table_list, new_table
-from utils import Int64, from_buf
+from utils import new_int64, from_buf
 from value.const import VALUE_TYPE_STRING, VALUE_TYPE_INT
 from value.int import new_int
 from value.string import new_string
@@ -73,8 +73,8 @@ def close_table(fd: int, name: str) -> None:
 def test_table():
     name = inspect.currentframe().f_code.co_name
     fd, table = init_table(name)
-    key = new_int(10)
-    row = new_row(Int64(100), [new_string("xiaoming"), new_string("m"), new_int(90)])
+    key = new_int64(10)
+    row = new_row(new_int64(10), [new_string("xiaoming"), new_string("m"), new_int(90)])
     table.set(key, row)
     row = table.get(key)
     row.show()
