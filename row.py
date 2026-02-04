@@ -1,21 +1,22 @@
 import io
-from utils import Int64, to_bytes, from_buf
-from value.bool import new_bool_from_buf
-from value.const import VALUE_TYPE_INT, VALUE_TYPE_STRING, VALUE_TYPE_BOOL
-from value.int import new_int_from_buf
-from value.string import new_string_from_buf
+from utils import to_bytes, from_buf
+from value.value_bool import new_value_bool_from_buf
+from value.const import VALUE_TYPE_INT, VALUE_TYPE_STRING, VALUE_TYPE_BOOL, VALUE_TYPE_INT64
+from value.value_int import new_value_int_from_buf
+from value.value_int64 import ValueInt64, new_value_int64_from_buf
+from value.value_string import new_value_string_from_buf
 from value.value import Value
 
 
 class Row:
 
-    def __init__(self, oid: Int64, vals: list[Value]):
-        self.oid: Int64 = oid
+    def __init__(self, oid: ValueInt64, vals: list[Value]):
+        self.oid: ValueInt64 = oid
         self.vals: list[Value] = vals
 
     def __bytes__(self):
         r = b''
-        r += to_bytes(self.oid)
+        r += bytes(self.oid)
         r += to_bytes(len(self.vals))
         for val in self.vals:
             r += bytes(val)
@@ -36,25 +37,28 @@ class Row:
             print(" ", end="")
 
 
-def new_row(oid: Int64, vals: list[Value]):
+def new_row(oid: ValueInt64, vals: list[Value]):
     r = Row(oid, vals)
     return r
 
 
 def new_row_from_buf(buf: io.BytesIO) -> Row:
-    oid = from_buf(buf, Int64)
+    oid_val_type = from_buf(buf, int)
+    if oid_val_type != VALUE_TYPE_INT64:
+        raise ValueError("oid 类型错误")
+    oid = new_value_int64_from_buf(buf)
     num_vals = from_buf(buf, int)
     vals = []
     for _ in range(num_vals):
         val_type = from_buf(buf, int)
         if val_type == VALUE_TYPE_INT:
-            val = new_int_from_buf(buf)
+            val = new_value_int_from_buf(buf)
             vals.append(val)
         elif val_type == VALUE_TYPE_STRING:
-            val = new_string_from_buf(buf)
+            val = new_value_string_from_buf(buf)
             vals.append(val)
         elif val_type == VALUE_TYPE_BOOL:
-            val = new_bool_from_buf(buf)
+            val = new_value_bool_from_buf(buf)
             vals.append(val)
         else:
             raise ValueError("未知数据类型")

@@ -4,7 +4,7 @@ from value.const import VALUE_TYPE_STRING
 from value.value import Value
 
 
-class String(Value):
+class ValueString(Value):
 
     def __init__(self, val: str):
         self.val_type: int = VALUE_TYPE_STRING
@@ -16,25 +16,25 @@ class String(Value):
         r += to_bytes(self.val)
         return r
 
-    def __eq__(self, other: 'String'):
+    def __eq__(self, other: 'ValueString'):
         return self.val_type == other.val_type and self.val == other.val
 
     def show(self):
-        print(f"String({self.val})", end="")
+        print(f"ValueString({self.val})", end="")
 
 
-def new_string(val: str):
-    r = String(val)
+def new_value_string(val: str):
+    r = ValueString(val)
     return r
 
 
-def new_string_from_buf(buf: io.BytesIO):
+def new_value_string_from_buf(buf: io.BytesIO):
     val = from_buf(buf, str)
-    r = String(val)
+    r = ValueString(val)
     return r
 
 
-def new_string_from_bytes(bytes_: bytes):
+def new_value_string_from_bytes(bytes_: bytes):
     buf = io.BytesIO(bytes_)
-    return new_string_from_buf(buf)
+    return new_value_string_from_buf(buf)
 

@@ -1,8 +1,10 @@
 import io
-from value.value import Value
 
 
-class Int64(Value):
+# python 的 int 当成 int32 使用，我需要自己封装 int64
+
+
+class Int64:
 
     def __init__(self, val: int):
         self.val: int = val
@@ -10,6 +12,9 @@ class Int64(Value):
     def __bytes__(self):
         r = self.val.to_bytes(length=8, byteorder="big", signed=True)
         return r
+
+    def __eq__(self, other: 'Int64'):
+        return self.val == other.val
 
 
 def new_int64(val: int) -> Int64:

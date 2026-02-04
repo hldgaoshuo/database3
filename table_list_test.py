@@ -9,8 +9,9 @@ from table_list import Table, TableSeqGenerator, new_table_seq_generator, TableL
     new_table_list, new_table
 from utils import new_int64, from_buf
 from value.const import VALUE_TYPE_STRING, VALUE_TYPE_INT
-from value.int import new_int
-from value.string import new_string
+from value.value_int import new_value_int
+from value.value_int64 import new_value_int64
+from value.value_string import new_value_string
 
 
 def init_table_seq_gen(name: str) -> tuple[int, TableSeqGenerator]:
@@ -73,8 +74,8 @@ def close_table(fd: int, name: str) -> None:
 def test_table():
     name = inspect.currentframe().f_code.co_name
     fd, table = init_table(name)
-    key = new_int64(10)
-    row = new_row(new_int64(10), [new_string("xiaoming"), new_string("m"), new_int(90)])
+    key = new_value_int64(new_int64(10))
+    row = new_row(new_value_int64(new_int64(10)), [new_value_string("xiaoming"), new_value_string("m"), new_value_int(90)])
     table.set(key, row)
     row = table.get(key)
     row.show()

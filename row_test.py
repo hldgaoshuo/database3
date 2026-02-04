@@ -1,16 +1,16 @@
 import pytest
-from oid import get_oid
 from row import new_row, new_row_from_bytes
 from utils import Int64
-from value.bool import new_bool
-from value.int import new_int
-from value.string import new_string
+from value.value_bool import new_value_bool
+from value.value_int import new_value_int
+from value.value_int64 import new_value_int64
+from value.value_string import new_value_string
 
 
 def test_to_bytes():
-    got = bytes(new_row(Int64(1770118732606), [new_int(2), new_string("a"), new_bool(True)]))
+    got = bytes(new_row(new_value_int64(Int64(1770118732606)), [new_value_int(2), new_value_string("a"), new_value_bool(True)]))
     want = (
-        b'\x00\x00\x01\x9c#L[>' +
+        b'\x00\x00\x00\x04' + b'\x00\x00\x01\x9c#L[>' +
         b'\x00\x00\x00\x03' +
         b'\x00\x00\x00\x01' + b'\x00\x00\x00\x02' +
         b'\x00\x00\x00\x02' + b'\x00\x00\x00\x01' + b'a' +
@@ -21,13 +21,13 @@ def test_to_bytes():
 
 def test_from_bytes():
     got = new_row_from_bytes(
-        b'\x00\x00\x01\x9c#L[>' +
+        b'\x00\x00\x00\x04' + b'\x00\x00\x01\x9c#L[>' +
         b'\x00\x00\x00\x03' +
         b'\x00\x00\x00\x01' + b'\x00\x00\x00\x02' +
         b'\x00\x00\x00\x02' + b'\x00\x00\x00\x01' + b'a' +
         b'\x00\x00\x00\x03' + b'\x01'
     )
-    want = new_row(Int64(1770118732606), [new_int(2), new_string("a"), new_bool(True)])
+    want = new_row(new_value_int64(Int64(1770118732606)), [new_value_int(2), new_value_string("a"), new_value_bool(True)])
     assert got == want
 
 

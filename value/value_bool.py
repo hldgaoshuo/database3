@@ -4,7 +4,7 @@ from value.const import VALUE_TYPE_BOOL
 from value.value import Value
 
 
-class Bool(Value):
+class ValueBool(Value):
 
     def __init__(self, val: bool):
         self.val_type: int = VALUE_TYPE_BOOL
@@ -16,24 +16,24 @@ class Bool(Value):
         r += to_bytes(self.val)
         return r
 
-    def __eq__(self, other: 'Bool'):
+    def __eq__(self, other: 'ValueBool'):
         return self.val_type == other.val_type and self.val == other.val
     
     def show(self):
-        print(f"Bool({self.val})", end="")
+        print(f"ValueBool({self.val})", end="")
         
 
-def new_bool(val: bool):
-    r = Bool(val)
+def new_value_bool(val: bool):
+    r = ValueBool(val)
     return r
 
 
-def new_bool_from_buf(buf: io.BytesIO):
+def new_value_bool_from_buf(buf: io.BytesIO):
     val = from_buf(buf, bool)
-    r = Bool(val)
+    r = ValueBool(val)
     return r
 
 
-def new_bool_from_bytes(bytes_: bytes):
+def new_value_bool_from_bytes(bytes_: bytes):
     buf = io.BytesIO(bytes_)
-    return new_bool_from_buf(buf)
+    return new_value_bool_from_buf(buf)
