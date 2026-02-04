@@ -2,8 +2,10 @@ import io
 
 from const import META_PAGE_ID, INIT_TABLE_SEQ
 from free_list import FreeList, new_free_list_from_page_id, new_free_list
+from row import Row
+from value.value import Value
 from table_list import TableSeqGenerator, Table, TableList, new_table_seq_generator, new_table_list_from_page_id, \
-    new_table_list
+    new_table_list, new_table
 from utils import from_buf
 
 
@@ -15,6 +17,24 @@ class Database:
         self.table_seq_gen: TableSeqGenerator = table_seq_gen
         self.table_list: TableList = table_list
         self.tables: dict[str, Table] = tables
+
+    def create(self, name: str, col_names: list[str], col_types: list[int]):
+        seq = self.table_seq_gen.get_next_seq()
+        table = new_table(self.fd, self.free_list, name, seq, col_names, col_types)
+        self.table_list.add_table(table)
+        self.tables[name] = table
+
+    def set(self, name: str, key: Value, row: Row):
+        table = self.tables[name]
+        table.set(key, row)
+
+    def get(self, name: str, key: Value):
+        table = self.tables[name]
+        return table.get(key)
+
+    def delete(self, name: str, key: Value):
+        table = self.tables[name]
+        table.delete(key)
 
 
 def new_database(fd: int) -> Database:

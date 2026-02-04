@@ -152,9 +152,11 @@ class TableList:
     def get_tables(self) -> dict[str, Table]:
         tables = {}
         node = self.head
-        while node.page_id != NULL_PAGE_ID:
+        while True:
             for table in node.tables:
                 tables[table.name] = table
+            if node.next_page_id == NULL_PAGE_ID:
+                break
             node = new_table_list_node_from_page_id(self.fd, self.free_list, node.next_page_id)
         return tables
 
