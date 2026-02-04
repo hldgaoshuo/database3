@@ -19,6 +19,8 @@ class Database:
         self.tables: dict[str, Table] = tables
 
     def create(self, name: str, col_names: list[str], col_types: list[int]):
+        if name in self.tables:
+            raise ValueError("table name already exists")
         seq = self.table_seq_gen.get_next_seq()
         table = new_table(self.fd, self.free_list, name, seq, col_names, col_types)
         self.table_list.add_table(table)
