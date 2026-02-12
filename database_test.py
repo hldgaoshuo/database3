@@ -1,7 +1,8 @@
 import inspect
 from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS
 from database import Database, new_database_from_meta, new_database
-from file import file_open, get_page, set_magic_number
+from file import file_open
+from pager import new_pager
 from row import new_row
 from utils import new_int64
 from value.const import VALUE_TYPE_STRING, VALUE_TYPE_INT
@@ -12,13 +13,14 @@ from value.value_string import new_value_string
 
 def init(name: str) -> tuple[int, Database]:
     fd = file_open(f'{name}.db')
-    meta = get_page(fd, META_PAGE_ID)
+    pager = new_pager(fd)
+    meta = pager.page_get(META_PAGE_ID)
     magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
     if magic_number_bs == MAGIC_NUMBER_BS:
-        db = new_database_from_meta(fd, meta)
+        db = new_database_from_meta(pager, meta)
     else:
-        set_magic_number(fd)
-        db = new_database(fd)
+        pager.magic_number_set()
+        db = new_database(pager)
     return fd, db
 
 

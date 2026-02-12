@@ -1,3 +1,5 @@
+import pytest
+
 from kv import new_kv
 from utils import from_bytes
 
@@ -26,3 +28,7 @@ def test_get():
     assert from_bytes(kv[2], str) == "b"
     kv["b"] = 2
     assert from_bytes(kv["b"], int) == 2
+
+
+if __name__ == "__main__":
+    pytest.main([__file__])
