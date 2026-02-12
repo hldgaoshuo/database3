@@ -37,17 +37,135 @@ class BPlusTreeNode:
                 r += to_bytes(page_id)
         return r
 
-    def __getitem__(self, key: bytes) -> bytes | None:
+    def get_lt(self, key: bytes) -> list[bytes]:
         if self.is_leaf:
-            result = self.get_val(key)
+            result = self._get_lt(key)
             return result
         index = self.get_page_id_index(key)
         page_id = self.page_ids[index]
         child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
-        result = child[key]
+        result = child.get_lt(key)
         return result
 
-    def get_val(self, key: bytes) -> bytes | None:
+    def _get_lt(self, key: bytes) -> list[bytes]:
+        result = []
+        i = len(self.keys) - 1
+        while i >= 0 and self.keys[i] >= key:
+            i = i - 1
+        # while i >= 0:
+        #     val = self.vals[i]
+        #     result.append(val)
+        #     i = i - 1
+        if i >= 0:
+            vals = self.vals[:i + 1]
+            result.extend(vals)
+        result_left = self._get_left()
+        result = result_left + result
+        return result
+
+    def get_le(self, key: bytes) -> list[bytes]:
+        if self.is_leaf:
+            result = self._get_le(key)
+            return result
+        index = self.get_page_id_index(key)
+        page_id = self.page_ids[index]
+        child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
+        result = child.get_le(key)
+        return result
+
+    def _get_le(self, key: bytes) -> list[bytes]:
+        result = []
+        i = len(self.keys) - 1
+        while i >= 0 and self.keys[i] > key:
+            i = i - 1
+        # while i >= 0:
+        #     val = self.vals[i]
+        #     result.append(val)
+        #     i = i - 1
+        if i >= 0:
+            vals = self.vals[:i + 1]
+            result.extend(vals)
+        result_left = self._get_left()
+        result = result_left + result
+        return result
+
+    def _get_left(self) -> list[bytes]:
+        result = []
+        while self.left_page_id != NULL_PAGE_ID:
+            node = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, self.left_page_id)
+            result = node.vals + result
+        return result
+
+    def get_gt(self, key: bytes) -> list[bytes]:
+        if self.is_leaf:
+            result = self._get_gt(key)
+            return result
+        index = self.get_page_id_index(key)
+        page_id = self.page_ids[index]
+        child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
+        result = child.get_gt(key)
+        return result
+
+    def _get_gt(self, key: bytes) -> list[bytes]:
+        result = []
+        i = 0
+        while i < len(self.keys) and self.keys[i] <= key:
+            i = i + 1
+        # while i < len(self.keys):
+        #     val = self.vals[i]
+        #     result.append(val)
+        #     i = i + 1
+        if i < len(self.keys):
+            vals = self.vals[i:]
+            result.extend(vals)
+        result_right = self._get_right()
+        result.extend(result_right)
+        return result
+
+    def get_ge(self, key: bytes) -> list[bytes]:
+        if self.is_leaf:
+            result = self._get_ge(key)
+            return result
+        index = self.get_page_id_index(key)
+        page_id = self.page_ids[index]
+        child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
+        result = child.get_ge(key)
+        return result
+
+    def _get_ge(self, key: bytes) -> list[bytes]:
+        result = []
+        i = 0
+        while i < len(self.keys) and self.keys[i] < key:
+            i = i + 1
+        # while i < len(self.keys):
+        #     val = self.vals[i]
+        #     result.append(val)
+        #     i = i + 1
+        if i < len(self.keys):
+            vals = self.vals[i:]
+            result.extend(vals)
+        result_right = self._get_right()
+        result.extend(result_right)
+        return result
+
+    def _get_right(self) -> list[bytes]:
+        result = []
+        while self.right_page_id != NULL_PAGE_ID:
+            node = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, self.right_page_id)
+            result.extend(node.vals)
+        return result
+
+    def get_one(self, key: bytes) -> bytes | None:
+        if self.is_leaf:
+            result = self._get_one(key)
+            return result
+        index = self.get_page_id_index(key)
+        page_id = self.page_ids[index]
+        child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
+        result = child.get_one(key)
+        return result
+
+    def _get_one(self, key: bytes) -> bytes | None:
         try:
             i = self.keys.index(key)
         except ValueError:
@@ -327,8 +445,29 @@ class BPlusTree:
         self.free_list: FreeList = free_list
         self.root: BPlusTreeNode = root
 
-    def __getitem__(self, key: bytes) -> bytes | None:
-        val = self.root[key]
+    def get_all(self) -> list[bytes]:
+        # todo：可以优化，BPlusTree 记录最左边和最右边的叶子节点，直接从叶子节点开始遍历
+        vals = self.root.get_ge(b'')
+        return vals
+
+    def get_lt(self, key: bytes) -> list[bytes]:
+        vals = self.root.get_lt(key)
+        return vals
+
+    def get_le(self, key: bytes) -> list[bytes]:
+        vals = self.root.get_le(key)
+        return vals
+
+    def get_gt(self, key: bytes) -> list[bytes]:
+        vals = self.root.get_gt(key)
+        return vals
+
+    def get_ge(self, key: bytes) -> list[bytes]:
+        vals = self.root.get_ge(key)
+        return vals
+
+    def get_one(self, key: bytes) -> bytes | None:
+        val = self.root.get_one(key)
         return val
 
     def __setitem__(self, key: bytes, val: bytes) -> None:

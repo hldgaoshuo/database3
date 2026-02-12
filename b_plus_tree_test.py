@@ -105,66 +105,66 @@ def test_set_6():
     close(fd, name)
 
 
-def test_get_1():
+def test_get_one_1():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     b_plus_tree[b'1'] = b'1'
-    r = b_plus_tree[b'1']
+    r = b_plus_tree.get_one(b'1')
     assert r == b'1'
     close(fd, name)
 
 
-def test_get_2():
+def test_get_one_2():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'1', b'2', b'3']:
         b_plus_tree[o] = o
     for o in [b'1', b'2', b'3']:
-        r = b_plus_tree[o]
+        r = b_plus_tree.get_one(o)
         assert r == o
     close(fd, name)
 
 
-def test_get_3():
+def test_get_one_3():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'1', b'2', b'3', b'4']:
         b_plus_tree[o] = o
     for o in [b'1', b'2', b'3', b'4']:
-        r = b_plus_tree[o]
+        r = b_plus_tree.get_one(o)
         assert r == o
     close(fd, name)
 
 
-def test_get_4():
+def test_get_one_4():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'1', b'2', b'3', b'4', b'5', b'6']:
         b_plus_tree[o] = o
     for o in [b'1', b'2', b'3', b'4', b'5', b'6']:
-        r = b_plus_tree[o]
+        r = b_plus_tree.get_one(o)
         assert r == o
     close(fd, name)
 
 
-def test_get_5():
+def test_get_one_5():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8']:
         b_plus_tree[o] = o
     for o in [b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8']:
-        r = b_plus_tree[o]
+        r = b_plus_tree.get_one(o)
         assert r == o
     close(fd, name)
 
 
-def test_get_6():
+def test_get_one_6():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j']:
         b_plus_tree[o] = o
     for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j']:
-        r = b_plus_tree[o]
+        r = b_plus_tree.get_one(o)
         assert r == o
     close(fd, name)
 
