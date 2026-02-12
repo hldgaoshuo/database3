@@ -10,10 +10,10 @@ def __main():
     meta = pager.page_get(META_PAGE_ID)
     magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
     if magic_number_bs == MAGIC_NUMBER_BS:
-        db = new_database_from_meta(fd, meta)
+        db = new_database_from_meta(pager, meta)
     else:
         pager.magic_number_set()
-        db = new_database(fd)
+        db = new_database(pager)
 
 
 if __name__ == '__main__':
