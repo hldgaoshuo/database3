@@ -89,13 +89,6 @@ class BPlusTreeNode:
         result = result_left + result
         return result
 
-    def _get_left(self) -> list[bytes]:
-        result = []
-        while self.left_page_id != NULL_PAGE_ID:
-            node = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, self.left_page_id)
-            result = node.vals + result
-        return result
-
     def get_gt(self, key: bytes) -> list[bytes]:
         if self.is_leaf:
             result = self._get_gt(key)
@@ -148,10 +141,19 @@ class BPlusTreeNode:
         result.extend(result_right)
         return result
 
+    def _get_left(self) -> list[bytes]:
+        result = []
+        node = self
+        while node.left_page_id != NULL_PAGE_ID:
+            node = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, node.left_page_id)
+            result = node.vals + result
+        return result
+
     def _get_right(self) -> list[bytes]:
         result = []
-        while self.right_page_id != NULL_PAGE_ID:
-            node = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, self.right_page_id)
+        node = self
+        while node.right_page_id != NULL_PAGE_ID:
+            node = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, node.right_page_id)
             result.extend(node.vals)
         return result
 
@@ -180,9 +182,9 @@ class BPlusTreeNode:
         i = i + 1
         return i
 
-    def __setitem__(self, key: bytes, val: bytes) -> None:
+    def add(self, key: bytes, val: bytes) -> None:
         if self.is_leaf:
-            self.set_val(key, val)
+            self._add(key, val)
             self.persist()
             return
 
@@ -190,7 +192,7 @@ class BPlusTreeNode:
         page_id = self.page_ids[index]
         child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
         if not child.is_full():
-            child[key] = val
+            child.add(key, val)
             return
 
         # self not leaf
@@ -203,12 +205,49 @@ class BPlusTreeNode:
         self.page_ids.insert(index + 1, child_new.page_id)
         self.persist()
         if key > self.keys[index]:
-            child_new[key] = val
+            child_new.add(key, val)
         else:
-            child[key] = val
+            child.add(key, val)
         return
 
-    def set_val(self, key: bytes, val: bytes) -> None:
+    def _add(self, key: bytes, val: bytes) -> None:
+        i = len(self.keys) - 1
+        while i >= 0 and key < self.keys[i]:
+            i = i - 1
+        if not (i >= 0 and key == self.keys[i]):
+            i = i + 1
+            self.keys.insert(i, key)
+            self.vals.insert(i, val)
+
+    def upsert(self, key: bytes, val: bytes) -> None:
+        if self.is_leaf:
+            self._upsert(key, val)
+            self.persist()
+            return
+
+        index = self.get_page_id_index(key)
+        page_id = self.page_ids[index]
+        child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
+        if not child.is_full():
+            child.upsert(key, val)
+            return
+
+        # self not leaf
+        # child is full
+        if child.is_leaf:
+            self.keys.insert(index, child.keys[DEGREE])
+        else:
+            self.keys.insert(index, child.keys[DEGREE - 1])
+        child_new = child.split()
+        self.page_ids.insert(index + 1, child_new.page_id)
+        self.persist()
+        if key > self.keys[index]:
+            child_new.upsert(key, val)
+        else:
+            child.upsert(key, val)
+        return
+
+    def _upsert(self, key: bytes, val: bytes) -> None:
         i = len(self.keys) - 1
         while i >= 0 and key < self.keys[i]:
             i = i - 1
@@ -218,6 +257,117 @@ class BPlusTreeNode:
             i = i + 1
             self.keys.insert(i, key)
             self.vals.insert(i, val)
+
+    def update_lt(self, key_search: bytes, index: int, val: bytes) -> None:
+        if self.is_leaf:
+            self._update_lt(key_search, index, val)
+            self.persist()
+            return
+
+        index = self.get_page_id_index(key_search)
+        page_id = self.page_ids[index]
+        child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
+        child.update_lt(key_search, index, val)
+        return
+
+    def _update_lt(self, key_search: bytes, index: int, val: bytes) -> None:
+        i = len(self.keys) - 1
+        while i >= 0 and key_search < self.keys[i]:
+            i = i - 1
+        while i >= 0:
+            val_in = self.vals[i]
+            val_out = val_in[:index] + val + val_in[index + len(val):]
+            self.vals[i] = val_out
+            i = i - 1
+        self._update_left(index, val)
+
+    def update_le(self, key_search: bytes, index: int, val: bytes) -> None:
+        if self.is_leaf:
+            self._update_le(key_search, index, val)
+            self.persist()
+            return
+
+        index = self.get_page_id_index(key_search)
+        page_id = self.page_ids[index]
+        child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
+        child.update_le(key_search, index, val)
+        return
+
+    def _update_le(self, key_search: bytes, index: int, val: bytes) -> None:
+        i = len(self.keys) - 1
+        while i >= 0 and key_search <= self.keys[i]:
+            i = i - 1
+        while i >= 0:
+            val_in = self.vals[i]
+            val_out = val_in[:index] + val + val_in[index + len(val):]
+            self.vals[i] = val_out
+            i = i - 1
+        self._update_left(index, val)
+
+    def update_gt(self, key_search: bytes, index: int, val: bytes) -> None:
+        if self.is_leaf:
+            self._update_gt(key_search, index, val)
+            self.persist()
+            return
+
+        index = self.get_page_id_index(key_search)
+        page_id = self.page_ids[index]
+        child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
+        child.update_gt(key_search, index, val)
+        return
+
+    def _update_gt(self, key_search: bytes, index: int, val: bytes) -> None:
+        i = 0
+        while i < len(self.keys) and self.keys[i] <= key_search:
+            i = i + 1
+        while i < len(self.keys):
+            val_in = self.vals[i]
+            val_out = val_in[:index] + val + val_in[index + len(val):]
+            self.vals[i] = val_out
+            i = i + 1
+        self._update_right(index, val)
+
+    def update_ge(self, key_search: bytes, index: int, val: bytes) -> None:
+        if self.is_leaf:
+            self._update_ge(key_search, index, val)
+            self.persist()
+            return
+
+        index = self.get_page_id_index(key_search)
+        page_id = self.page_ids[index]
+        child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
+        child.update_ge(key_search, index, val)
+        return
+
+    def _update_ge(self, key_search: bytes, index: int, val: bytes) -> None:
+        i = 0
+        while i < len(self.keys) and self.keys[i] < key_search:
+            i = i + 1
+        while i < len(self.keys):
+            val_in = self.vals[i]
+            val_out = val_in[:index] + val + val_in[index + len(val):]
+            self.vals[i] = val_out
+            i = i + 1
+        self._update_right(index, val)
+
+    def _update_left(self, index: int, val: bytes) -> None:
+        node = self
+        while node.left_page_id != NULL_PAGE_ID:
+            node = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, node.left_page_id)
+            node._update_vals(index, val)
+            node.persist()
+
+    def _update_right(self, index: int, val: bytes) -> None:
+        node = self
+        while node.right_page_id != NULL_PAGE_ID:
+            node = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, node.right_page_id)
+            node._update_vals(index, val)
+            node.persist()
+
+    def _update_vals(self, index: int, val: bytes) -> None:
+        for i, val_in in enumerate(self.vals):
+            val_out = val_in[:index] + val + val_in[index + len(val):]
+            self.vals[i] = val_out
 
     def persist(self) -> None:
         bs = bytes(self)
@@ -470,21 +620,55 @@ class BPlusTree:
         val = self.root.get_one(key)
         return val
 
-    def __setitem__(self, key: bytes, val: bytes) -> None:
-        if self.root.is_full():
-            child = self.root
-            new_root = new_b_plus_tree_node(self.pager, self.free_list, False)
-            _key = child.keys[DEGREE - 1]
-            if child.is_leaf:
-                _key = child.keys[DEGREE]
-            new_root.keys = [_key]
-            new_root.page_ids = [child.page_id]
-            child_new = child.split()
-            new_root.page_ids.append(child_new.page_id)
-            new_root.persist()
-            self.pager.root_page_id_set(self.seq, new_root.page_id)
-            self.root = new_root
-        self.root[key] = val
+    def add(self, key_vals: list[tuple[bytes, bytes]]) -> None:
+        for key, val in key_vals:
+            if self.root.is_full():
+                child = self.root
+                new_root = new_b_plus_tree_node(self.pager, self.free_list, False)
+                _key = child.keys[DEGREE - 1]
+                if child.is_leaf:
+                    _key = child.keys[DEGREE]
+                new_root.keys = [_key]
+                new_root.page_ids = [child.page_id]
+                child_new = child.split()
+                new_root.page_ids.append(child_new.page_id)
+                new_root.persist()
+                self.pager.root_page_id_set(self.seq, new_root.page_id)
+                self.root = new_root
+            self.root.add(key, val)
+
+    def upsert(self, key_vals: list[tuple[bytes, bytes]]) -> None:
+        for key, val in key_vals:
+            if self.root.is_full():
+                child = self.root
+                new_root = new_b_plus_tree_node(self.pager, self.free_list, False)
+                _key = child.keys[DEGREE - 1]
+                if child.is_leaf:
+                    _key = child.keys[DEGREE]
+                new_root.keys = [_key]
+                new_root.page_ids = [child.page_id]
+                child_new = child.split()
+                new_root.page_ids.append(child_new.page_id)
+                new_root.persist()
+                self.pager.root_page_id_set(self.seq, new_root.page_id)
+                self.root = new_root
+            self.root.upsert(key, val)
+
+    def update_lt(self, key_search: bytes, index_vals: list[tuple[int, bytes]]) -> None:
+        for index, val in index_vals:
+            self.root.update_lt(key_search, index, val)
+
+    def update_le(self, key_search: bytes, index_vals: list[tuple[int, bytes]]) -> None:
+        for index, val in index_vals:
+            self.root.update_le(key_search, index, val)
+
+    def update_gt(self, key_search: bytes, index_vals: list[tuple[int, bytes]]) -> None:
+        for index, val in index_vals:
+            self.root.update_gt(key_search, index, val)
+
+    def update_ge(self, key_search: bytes, index_vals: list[tuple[int, bytes]]) -> None:
+        for index, val in index_vals:
+            self.root.update_ge(key_search, index, val)
 
     def __delitem__(self, key: bytes) -> None:
         del self.root[key]
