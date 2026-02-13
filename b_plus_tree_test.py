@@ -169,133 +169,133 @@ def test_get_one_6():
     close(fd, name)
 
 
-def test_delete_1():
+def test_delete_one_1():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
         b_plus_tree.add([(o, o)])
     show(b_plus_tree.root)
-    del b_plus_tree[b'k']
+    b_plus_tree.delete_one(b'k')
     show(b_plus_tree.root)
     close(fd, name)
 
 
-def test_delete_2():
+def test_delete_one_2():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
         b_plus_tree.add([(o, o)])
     show(b_plus_tree.root)
     for o in [b'k', b'j']:
-        del b_plus_tree[o]
+        b_plus_tree.delete_one(o)
     show(b_plus_tree.root)
     close(fd, name)
 
 
-def test_delete_3():
+def test_delete_one_3():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
         b_plus_tree.add([(o, o)])
     show(b_plus_tree.root)
     for o in [b'k', b'j', b'i']:
-        del b_plus_tree[o]
+        b_plus_tree.delete_one(o)
     show(b_plus_tree.root)
     close(fd, name)
 
 
-def test_delete_4():
+def test_delete_one_4():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
         b_plus_tree.add([(o, o)])
     show(b_plus_tree.root)
     for o in [b'k', b'j', b'i', b'h']:
-        del b_plus_tree[o]
+        b_plus_tree.delete_one(o)
     show(b_plus_tree.root)
     close(fd, name)
 
 
-def test_delete_5():
+def test_delete_one_5():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
         b_plus_tree.add([(o, o)])
     show(b_plus_tree.root)
     for o in [b'k', b'j', b'i', b'h', b'g']:
-        del b_plus_tree[o]
+        b_plus_tree.delete_one(o)
     show(b_plus_tree.root)
     close(fd, name)
 
 
-def test_delete_6():
+def test_delete_one_6():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
         b_plus_tree.add([(o, o)])
     show(b_plus_tree.root)
     for o in [b'k', b'j', b'i', b'h', b'g', b'f']:
-        del b_plus_tree[o]
+        b_plus_tree.delete_one(o)
     show(b_plus_tree.root)
     close(fd, name)
 
 
-def test_delete_7():
+def test_delete_one_7():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
         b_plus_tree.add([(o, o)])
     show(b_plus_tree.root)
     for o in [b'k', b'j', b'i', b'h', b'g', b'f', b'e']:
-        del b_plus_tree[o]
+        b_plus_tree.delete_one(o)
     show(b_plus_tree.root)
     close(fd, name)
 
 
-def test_delete_8():
+def test_delete_one_8():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
         b_plus_tree.add([(o, o)])
     show(b_plus_tree.root)
     for o in [b'k', b'j', b'i', b'h', b'g', b'f', b'e', b'd']:
-        del b_plus_tree[o]
+        b_plus_tree.delete_one(o)
     show(b_plus_tree.root)
     close(fd, name)
 
 
-def test_delete_9():
+def test_delete_one_9():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
         b_plus_tree.add([(o, o)])
     show(b_plus_tree.root)
     for o in [b'k', b'j', b'i', b'h', b'g', b'f', b'e', b'd', b'c']:
-        del b_plus_tree[o]
+        b_plus_tree.delete_one(o)
     show(b_plus_tree.root)
     close(fd, name)
 
 
-def test_delete_10():
+def test_delete_one_10():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
         b_plus_tree.add([(o, o)])
     show(b_plus_tree.root)
     for o in [b'k', b'j', b'i', b'h', b'g', b'f', b'e', b'd', b'c', b'b']:
-        del b_plus_tree[o]
+        b_plus_tree.delete_one(o)
     show(b_plus_tree.root)
     close(fd, name)
 
 
-def test_delete_11():
+def test_delete_one_11():
     name = inspect.currentframe().f_code.co_name
     fd, b_plus_tree = init(name)
     for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
         b_plus_tree.add([(o, o)])
     show(b_plus_tree.root)
     for o in [b'k', b'j', b'i', b'h', b'g', b'f', b'e', b'd', b'c', b'b', b'a']:
-        del b_plus_tree[o]
+        b_plus_tree.delete_one(o)
     show(b_plus_tree.root)
     close(fd, name)
 

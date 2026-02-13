@@ -404,19 +404,16 @@ class BPlusTreeNode:
         self.persist()
         return new
 
-    def __delitem__(self, key: bytes) -> None:
-        self.delete(key)
-
-    def delete(self, key: bytes) -> bytes | None:
+    def delete_one(self, key: bytes) -> bytes | None:
         if self.is_leaf:
-            key_right = self.delete_val(key)
+            key_right = self._delete_one(key)
             self.persist()
             return key_right
 
         page_id_index = self.get_page_id_index(key)
         page_id = self.page_ids[page_id_index]
         child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
-        key_right = child.delete(key)
+        key_right = child.delete_one(key)
 
         if self.need_replace(key, key_right):
             key_index = self.get_key_index(key)
@@ -450,7 +447,7 @@ class BPlusTreeNode:
             self.merge_right_child(child_left, child, page_id_index - 1)
             return key_right
 
-    def delete_val(self, key: bytes) -> bytes | None:
+    def _delete_one(self, key: bytes) -> bytes | None:
         key_right = None
         try:
             i = self.keys.index(key)
@@ -670,8 +667,8 @@ class BPlusTree:
         for index, val in index_vals:
             self.root.update_ge(key_search, index, val)
 
-    def __delitem__(self, key: bytes) -> None:
-        del self.root[key]
+    def delete_one(self, key: bytes) -> None:
+        self.root.delete_one(key)
         if self.root.is_empty() and not self.root.is_leaf:
             page_id = self.root.page_ids[0]
             new_root = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
