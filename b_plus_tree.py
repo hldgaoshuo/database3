@@ -551,6 +551,114 @@ class BPlusTreeNode:
     def is_empty(self) -> bool:
         return len(self.keys) == 0
 
+    def delete_lt(self, key: bytes) -> bool:
+        """
+        删除所有 key < k 的记录，返回 True 表示本节点可能下溢需要父节点处理。
+
+        策略：
+        - 叶节点：直接截断 < key 的部分，同时修复左侧叶链表指针
+        - 内部节点：
+            1. 找到包含 key 的子节点路径 (index)
+            2. 释放所有 index 左侧的子树（整体丢弃）
+            3. 递归处理 index 子节点
+            4. 丢弃已删的 keys[0..index-1] 和 page_ids[0..index-1]
+            5. 更新最左侧分隔键
+            6. 若 index 子节点下溢，向右借位或与右兄弟合并
+        """
+        if self.is_leaf:
+            # 找到第一个 >= key 的位置
+            i = 0
+            while i < len(self.keys) and self.keys[i] < key:
+                i += 1
+            # 截断左侧 [0..i-1]
+            self.keys = self.keys[i:]
+            self.vals = self.vals[i:]
+            # 修复左侧叶链表：把之前左邻的叶节点全部断开
+            if self.left_page_id != NULL_PAGE_ID:
+                # 逐个向左遍历并释放，同时断开链表
+                node = self
+                while node.left_page_id != NULL_PAGE_ID:
+                    left = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, node.left_page_id)
+                    self.free_list.add_page_id(left.page_id)
+                    node = left
+                self.left_page_id = NULL_PAGE_ID
+                self.persist()
+            else:
+                self.persist()
+            return False  # 叶节点即使空也由上层决定是否需要处理
+
+        # 内部节点
+        index = self.get_page_id_index(key)
+
+        # 1. 释放 index 左侧所有子树
+        for i in range(index):
+            child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, self.page_ids[i])
+            child._free_subtree()
+
+        # 2. 递归处理 index 子节点
+        child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, self.page_ids[index])
+        child.delete_lt(key)
+
+        # 3. 更新本节点：去掉 index 左侧的 keys 和 page_ids
+        #    内部节点有 n 个 keys 和 n+1 个 page_ids
+        #    page_ids[0..index-1] 已被释放，keys[0..index-1] 对应的分隔键也要删除
+        self.page_ids = self.page_ids[index:]  # 现在 page_ids[0] 是原来的 page_ids[index]
+        self.keys = self.keys[index:]  # 去掉左侧的 index 个分隔键
+
+        # 4. 更新最左侧子树对应的分隔键
+        #    最左侧子节点（page_ids[0]）现在最小 key 可能已变化
+        #    如果它是叶节点，keys[0]（若存在）就是新的分隔键
+        #    如果 keys 非空，keys[0] 是 page_ids[0] 和 page_ids[1] 之间的分隔
+        #    需要用 page_ids[0] 最小 key 来更新 keys[0]（若 page_ids[0] 非空）
+        child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, self.page_ids[0])
+        if len(self.keys) > 0:
+            new_sep = self._get_leftmost_key(child)
+            if new_sep is not None:
+                # keys[0] 是 page_ids[0] 和 page_ids[1] 之间的分隔，
+                # 对于叶节点，分隔键 = page_ids[1] 的第一个 key（B+树惯例）
+                # 不需要修改 keys[0]，它已经指向右侧子树的最小值，保持不变
+                pass
+
+        # 5. 检查 child（page_ids[0]）是否下溢，只能向右借/合并
+        if not child.is_enough() and not child.is_leaf:
+            if len(self.page_ids) > 1:
+                child_right = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, self.page_ids[1])
+                if child_right.can_borrow():
+                    self.borrow_child_right(0, child, child_right)
+                else:
+                    self.merge_right_child(child, child_right, 0)
+        elif child.is_leaf and len(child.keys) == 0 and len(self.page_ids) > 1:
+            # 叶节点被清空，合并（直接丢弃空叶，把右侧提上来）
+            child_right = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, self.page_ids[1])
+            # 修复链表：child_right 的左侧指向 child 的左侧（NULL）
+            child_right.left_page_id = child.left_page_id
+            child_right.persist()
+            self.free_list.add_page_id(child.page_id)
+            self.page_ids.pop(0)
+            self.keys.pop(0)
+
+        self.persist()
+        return len(self.keys) == 0
+
+    def _free_subtree(self) -> None:
+        """递归释放整棵子树的所有页面（整体丢弃，无需平衡）"""
+        if not self.is_leaf:
+            for page_id in self.page_ids:
+                child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
+                child._free_subtree()
+        self.free_list.add_page_id(self.page_id)
+
+    def _get_leftmost_key(self, node: 'BPlusTreeNode') -> bytes | None:
+        """获取子树中最左侧的 key"""
+        cur = node
+        while not cur.is_leaf:
+            if len(cur.page_ids) == 0:
+                return None
+            cur = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, cur.page_ids[0])
+        if len(cur.keys) == 0:
+            return None
+        return cur.keys[0]
+
 
 def new_b_plus_tree_node(pager: Pager, free_list: FreeList, is_leaf: bool) -> BPlusTreeNode:
     page_id = free_list.get_page_id()
@@ -672,6 +780,17 @@ class BPlusTree:
         if self.root.is_empty() and not self.root.is_leaf:
             page_id = self.root.page_ids[0]
             new_root = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
+            self.pager.root_page_id_set(self.seq, new_root.page_id)
+            self.root = new_root
+
+    def delete_lt(self, key: bytes) -> None:
+        self.root.delete_lt(key)
+        # 收缩根：如果根（内部节点）只剩 0 个 keys，说明只有一个子节点，下降一层
+        while self.root.is_empty() and not self.root.is_leaf:
+            old_root = self.root
+            page_id = old_root.page_ids[0]
+            new_root = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, page_id)
+            self.free_list.add_page_id(old_root.page_id)
             self.pager.root_page_id_set(self.seq, new_root.page_id)
             self.root = new_root
 

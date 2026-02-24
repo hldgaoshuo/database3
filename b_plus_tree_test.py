@@ -300,5 +300,121 @@ def test_delete_one_11():
     close(fd, name)
 
 
+def test_delete_lt_1_no_match():
+    """delete_lt(key) 中 key 小于所有元素，不删任何东西"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'c', b'd', b'e', b'f', b'g']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_lt(b'a')
+    show(b_plus_tree.root)
+    for o in [b'c', b'd', b'e', b'f', b'g']:
+        assert b_plus_tree.get_one(o) == o
+    close(fd, name)
+
+
+def test_delete_lt_2_delete_all():
+    """delete_lt(key) 中 key 大于所有元素，删除全部"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_lt(b'z')
+    show(b_plus_tree.root)
+    assert b_plus_tree.get_all() == []
+    close(fd, name)
+
+
+def test_delete_lt_3_single_leaf():
+    """单叶节点（不触发分裂），删除部分"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'1', b'2', b'3']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_lt(b'2')
+    show(b_plus_tree.root)
+    assert b_plus_tree.get_one(b'1') is None
+    assert b_plus_tree.get_one(b'2') == b'2'
+    assert b_plus_tree.get_one(b'3') == b'3'
+    close(fd, name)
+
+
+def test_delete_lt_4_multi_level_delete_left_subtrees():
+    """多层树，删除若干整棵左子树"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree.add([(o, o)])
+    show(b_plus_tree.root)
+    b_plus_tree.delete_lt(b'e')
+    show(b_plus_tree.root)
+    for o in [b'a', b'b', b'c', b'd']:
+        assert b_plus_tree.get_one(o) is None, f"{o} should be deleted"
+    for o in [b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        assert b_plus_tree.get_one(o) == o, f"{o} should exist"
+    close(fd, name)
+
+
+def test_delete_lt_5_delete_within_leaf():
+    """delete_lt 的切割点落在叶节点中间"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j']:
+        b_plus_tree.add([(o, o)])
+    show(b_plus_tree.root)
+    b_plus_tree.delete_lt(b'c')
+    show(b_plus_tree.root)
+    assert b_plus_tree.get_one(b'a') is None
+    assert b_plus_tree.get_one(b'b') is None
+    for o in [b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j']:
+        assert b_plus_tree.get_one(o) == o
+    close(fd, name)
+
+
+def test_delete_lt_6_tree_height_shrinks():
+    """删除大量数据后树高度应该收缩"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree.add([(o, o)])
+    show(b_plus_tree.root)
+    # 删除绝大多数，只留最后一个
+    b_plus_tree.delete_lt(b'k')
+    show(b_plus_tree.root)
+    assert b_plus_tree.root.is_leaf, "树应该收缩到只剩一个叶节点（根即叶）"
+    assert b_plus_tree.get_one(b'k') == b'k'
+    close(fd, name)
+
+
+def test_delete_lt_7_key_is_exact_boundary():
+    """delete_lt(k) 恰好等于某个 key：该 key 本身不被删除"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_lt(b'd')
+    show(b_plus_tree.root)
+    assert b_plus_tree.get_one(b'd') == b'd', "边界值 d 不应被删除"
+    for o in [b'a', b'b', b'c']:
+        assert b_plus_tree.get_one(o) is None
+    for o in [b'd', b'e', b'f', b'g', b'h']:
+        assert b_plus_tree.get_one(o) == o
+    close(fd, name)
+
+
+def test_delete_lt_8_get_all_consistent():
+    """delete_lt 后 get_all 返回的结果应与逐个 get_one 一致"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    keys = [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j']
+    for o in keys:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_lt(b'f')
+    show(b_plus_tree.root)
+    remaining = [o for o in keys if o >= b'f']
+    assert b_plus_tree.get_all() == remaining
+    close(fd, name)
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
