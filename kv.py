@@ -14,16 +14,17 @@ class KV:
 
     def __getitem__(self, item):
         _item = to_bytes(item)
-        return self.b_plus_tree[_item]
+        return self.b_plus_tree.get_one(_item)
 
     def __setitem__(self, key, value):
         _key = to_bytes(key)
         _value = to_bytes(value)
-        self.b_plus_tree[_key] = _value
+        key_vals = [(_key, _value)]
+        self.b_plus_tree.add(key_vals)
 
     def __delitem__(self, key):
         _key = to_bytes(key)
-        del self.b_plus_tree[_key]
+        self.b_plus_tree.delete_one(_key)
 
 
 def new_kv(name: str) -> KV:

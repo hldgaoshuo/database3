@@ -4,8 +4,6 @@ from b_plus_tree import BPlusTree, new_b_plus_tree, new_b_plus_tree_from_root_pa
 from const import NUM_TABLE, NULL_PAGE_ID
 from free_list import FreeList
 from pager import Pager
-from row import new_row_from_bytes, Row
-from value.value import Value
 from utils import to_bytes, from_buf
 
 
@@ -44,21 +42,6 @@ class Table:
         for col_type in self.col_types:
             r += to_bytes(col_type)
         return r
-
-    def set(self, key: Value, row: Row):
-        _key = bytes(key)
-        _row = bytes(row)
-        self.b_plus_tree[_key] = _row
-
-    def get(self, key: Value) -> Row:
-        _key = bytes(key)
-        val = self.b_plus_tree[_key]
-        row = new_row_from_bytes(val)
-        return row
-
-    def delete(self, key: Value):
-        _key = bytes(key)
-        del self.b_plus_tree[_key]
 
 
 def new_table(pager: Pager, free_list: FreeList, name: str, seq: int, col_names: list[str], col_types: list[int]) -> Table:

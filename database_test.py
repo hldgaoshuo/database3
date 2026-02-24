@@ -33,7 +33,7 @@ def test_create():
     db.create(table_name, table_col_names, table_col_types)
 
 
-def test_set():
+def test_add():
     name = inspect.currentframe().f_code.co_name
     fd, db = init(name)
     table_name = "data"
@@ -42,10 +42,10 @@ def test_set():
     db.create(table_name, table_col_names, table_col_types)
     key = new_value_int64(new_int64(10))
     row = new_row(new_value_int64(new_int64(10)), [new_value_string("xiaoming"), new_value_string("m"), new_value_int(90)])
-    db.set(table_name, key, row)
+    db.add(table_name, key, row)
 
 
-def test_get():
+def test_get_one():
     name = inspect.currentframe().f_code.co_name
     fd, db = init(name)
     table_name = "data"
@@ -54,6 +54,6 @@ def test_get():
     db.create(table_name, table_col_names, table_col_types)
     key = new_value_int64(new_int64(10))
     row = new_row(new_value_int64(new_int64(10)), [new_value_string("xiaoming"), new_value_string("m"), new_value_int(90)])
-    db.set(table_name, key, row)
-    result = db.get(table_name, key)
+    db.add(table_name, key, row)
+    result = db.get_one(table_name, key)
     result.show()

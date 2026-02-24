@@ -5,7 +5,7 @@ from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS, INIT_TABLE_
 from file import file_open
 from free_list import FreeList, new_free_list_from_page_id, new_free_list
 from pager import new_pager, Pager
-from row import new_row
+from row import new_row, new_row_from_bytes
 from table_list import Table, TableSeqGenerator, new_table_seq_generator, TableList, new_table_list_from_page_id, \
     new_table_list, new_table
 from utils import new_int64, from_buf
@@ -79,8 +79,12 @@ def test_table():
     fd, table = init_table(name)
     key = new_value_int64(new_int64(10))
     row = new_row(new_value_int64(new_int64(10)), [new_value_string("xiaoming"), new_value_string("m"), new_value_int(90)])
-    table.set(key, row)
-    row = table.get(key)
+    _key = bytes(key)
+    _row = bytes(row)
+    key_vals = [(_key, _row)]
+    table.b_plus_tree.add(key_vals)
+    _row = table.b_plus_tree.get_one(_key)
+    row = new_row_from_bytes(_row)
     row.show()
     close_table(fd, name)
 

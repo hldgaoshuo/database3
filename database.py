@@ -3,7 +3,7 @@ import io
 from const import META_PAGE_ID, INIT_TABLE_SEQ
 from free_list import FreeList, new_free_list_from_page_id, new_free_list
 from pager import Pager
-from row import Row
+from row import Row, new_row_from_bytes
 from value.value import Value
 from table_list import TableSeqGenerator, Table, TableList, new_table_seq_generator, new_table_list_from_page_id, \
     new_table_list, new_table
@@ -27,17 +27,24 @@ class Database:
         self.table_list.add_table(table)
         self.tables[name] = table
 
-    def set(self, name: str, key: Value, row: Row):
+    def add(self, name: str, key: Value, row: Row):
         table = self.tables[name]
-        table.set(key, row)
+        _key = bytes(key)
+        _row = bytes(row)
+        key_vals = [(_key, _row)]
+        table.b_plus_tree.add(key_vals)
 
-    def get(self, name: str, key: Value):
+    def get_one(self, name: str, key: Value) -> Row:
         table = self.tables[name]
-        return table.get(key)
+        _key = bytes(key)
+        _row = table.b_plus_tree.get_one(_key)
+        row = new_row_from_bytes(_row)
+        return row
 
-    def delete(self, name: str, key: Value):
+    def delete_one(self, name: str, key: Value):
         table = self.tables[name]
-        table.delete(key)
+        _key = bytes(key)
+        table.b_plus_tree.delete_one(_key)
 
 
 def new_database(pager: Pager) -> Database:

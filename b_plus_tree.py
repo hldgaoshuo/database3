@@ -553,7 +553,7 @@ class BPlusTreeNode:
 
     def delete_lt(self, key: bytes) -> bool:
         """
-        删除所有 key < k 的记录，返回 True 表示本节点可能下溢需要父节点处理。
+        删除所有存储 key < 入参 key 的记录，返回 True 表示本节点可能下溢需要父节点处理。
 
         策略：
         - 叶节点：直接截断 < key 的部分，同时修复左侧叶链表指针
