@@ -300,6 +300,10 @@ def test_delete_one_11():
     close(fd, name)
 
 
+# ──────────────────────────────────────────────
+# delete_lt 测试
+# ──────────────────────────────────────────────
+
 def test_delete_lt_1_no_match():
     """delete_lt(key) 中 key 小于所有元素，不删任何东西"""
     name = inspect.currentframe().f_code.co_name
@@ -413,6 +417,300 @@ def test_delete_lt_8_get_all_consistent():
     show(b_plus_tree.root)
     remaining = [o for o in keys if o >= b'f']
     assert b_plus_tree.get_all() == remaining
+    close(fd, name)
+
+
+# ──────────────────────────────────────────────
+# delete_le 测试
+# ──────────────────────────────────────────────
+
+def test_delete_le_1_no_match():
+    """delete_le(key) 中 key 小于所有元素，不删任何东西"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'c', b'd', b'e', b'f', b'g']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_le(b'a')
+    show(b_plus_tree.root)
+    for o in [b'c', b'd', b'e', b'f', b'g']:
+        assert b_plus_tree.get_one(o) == o
+    close(fd, name)
+
+
+def test_delete_le_2_delete_all():
+    """delete_le(key) 中 key >= 最大元素，删除全部"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_le(b'e')
+    show(b_plus_tree.root)
+    assert b_plus_tree.get_all() == []
+    close(fd, name)
+
+
+def test_delete_le_3_boundary_deleted():
+    """delete_le 的边界值本身也被删除（le = less than or equal）"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'1', b'2', b'3', b'4', b'5']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_le(b'3')
+    show(b_plus_tree.root)
+    assert b_plus_tree.get_one(b'1') is None
+    assert b_plus_tree.get_one(b'2') is None
+    assert b_plus_tree.get_one(b'3') is None  # 边界值也被删
+    assert b_plus_tree.get_one(b'4') == b'4'
+    assert b_plus_tree.get_one(b'5') == b'5'
+    close(fd, name)
+
+
+def test_delete_le_4_multi_level():
+    """多层树，delete_le 删除左侧整棵子树"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree.add([(o, o)])
+    show(b_plus_tree.root)
+    b_plus_tree.delete_le(b'e')
+    show(b_plus_tree.root)
+    for o in [b'a', b'b', b'c', b'd', b'e']:
+        assert b_plus_tree.get_one(o) is None, f"{o} should be deleted"
+    for o in [b'f', b'g', b'h', b'i', b'j', b'k']:
+        assert b_plus_tree.get_one(o) == o, f"{o} should exist"
+    close(fd, name)
+
+
+def test_delete_le_5_tree_height_shrinks():
+    """delete_le 删除绝大多数后树高收缩"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_le(b'j')
+    show(b_plus_tree.root)
+    assert b_plus_tree.root.is_leaf, "只剩一个元素，树应收缩为叶节点"
+    assert b_plus_tree.get_one(b'k') == b'k'
+    close(fd, name)
+
+
+def test_delete_le_6_get_all_consistent():
+    """delete_le 后 get_all 结果正确"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    keys = [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j']
+    for o in keys:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_le(b'd')
+    show(b_plus_tree.root)
+    remaining = [o for o in keys if o > b'd']
+    assert b_plus_tree.get_all() == remaining
+    close(fd, name)
+
+
+# ──────────────────────────────────────────────
+# delete_gt 测试
+# ──────────────────────────────────────────────
+
+def test_delete_gt_1_no_match():
+    """delete_gt(key) 中 key >= 最大元素，不删任何东西"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_gt(b'z')
+    show(b_plus_tree.root)
+    for o in [b'a', b'b', b'c', b'd', b'e']:
+        assert b_plus_tree.get_one(o) == o
+    close(fd, name)
+
+
+def test_delete_gt_2_delete_all():
+    """delete_gt(key) 中 key 小于所有元素，删除全部"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_gt(b'0')
+    show(b_plus_tree.root)
+    assert b_plus_tree.get_all() == []
+    close(fd, name)
+
+
+def test_delete_gt_3_boundary_kept():
+    """delete_gt 的边界值本身不被删除（gt = strictly greater than）"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'1', b'2', b'3', b'4', b'5']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_gt(b'3')
+    show(b_plus_tree.root)
+    assert b_plus_tree.get_one(b'3') == b'3'   # 边界值保留
+    assert b_plus_tree.get_one(b'4') is None
+    assert b_plus_tree.get_one(b'5') is None
+    assert b_plus_tree.get_one(b'1') == b'1'
+    assert b_plus_tree.get_one(b'2') == b'2'
+    close(fd, name)
+
+
+def test_delete_gt_4_multi_level():
+    """多层树，delete_gt 删除右侧整棵子树"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree.add([(o, o)])
+    show(b_plus_tree.root)
+    b_plus_tree.delete_gt(b'g')
+    show(b_plus_tree.root)
+    for o in [b'h', b'i', b'j', b'k']:
+        assert b_plus_tree.get_one(o) is None, f"{o} should be deleted"
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g']:
+        assert b_plus_tree.get_one(o) == o, f"{o} should exist"
+    close(fd, name)
+
+
+def test_delete_gt_5_tree_height_shrinks():
+    """delete_gt 删除绝大多数后树高收缩"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_gt(b'a')
+    show(b_plus_tree.root)
+    assert b_plus_tree.root.is_leaf, "只剩一个元素，树应收缩为叶节点"
+    assert b_plus_tree.get_one(b'a') == b'a'
+    close(fd, name)
+
+
+def test_delete_gt_6_get_all_consistent():
+    """delete_gt 后 get_all 结果正确"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    keys = [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j']
+    for o in keys:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_gt(b'f')
+    show(b_plus_tree.root)
+    remaining = [o for o in keys if o <= b'f']
+    assert b_plus_tree.get_all() == remaining
+    close(fd, name)
+
+
+def test_delete_gt_7_delete_within_leaf():
+    """切割点落在叶节点中间"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_gt(b'e')
+    show(b_plus_tree.root)
+    for o in [b'f', b'g', b'h']:
+        assert b_plus_tree.get_one(o) is None
+    for o in [b'a', b'b', b'c', b'd', b'e']:
+        assert b_plus_tree.get_one(o) == o
+    close(fd, name)
+
+
+# ──────────────────────────────────────────────
+# delete_ge 测试
+# ──────────────────────────────────────────────
+
+def test_delete_ge_1_no_match():
+    """delete_ge(key) 中 key > 最大元素，不删任何东西"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_ge(b'z')
+    show(b_plus_tree.root)
+    for o in [b'a', b'b', b'c', b'd', b'e']:
+        assert b_plus_tree.get_one(o) == o
+    close(fd, name)
+
+
+def test_delete_ge_2_delete_all():
+    """delete_ge(key) 中 key <= 最小元素，删除全部"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_ge(b'a')
+    show(b_plus_tree.root)
+    assert b_plus_tree.get_all() == []
+    close(fd, name)
+
+
+def test_delete_ge_3_boundary_deleted():
+    """delete_ge 的边界值本身也被删除（ge = greater than or equal）"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'1', b'2', b'3', b'4', b'5']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_ge(b'3')
+    show(b_plus_tree.root)
+    assert b_plus_tree.get_one(b'3') is None   # 边界值也被删
+    assert b_plus_tree.get_one(b'4') is None
+    assert b_plus_tree.get_one(b'5') is None
+    assert b_plus_tree.get_one(b'1') == b'1'
+    assert b_plus_tree.get_one(b'2') == b'2'
+    close(fd, name)
+
+
+def test_delete_ge_4_multi_level():
+    """多层树，delete_ge 删除右侧整棵子树"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree.add([(o, o)])
+    show(b_plus_tree.root)
+    b_plus_tree.delete_ge(b'g')
+    show(b_plus_tree.root)
+    for o in [b'g', b'h', b'i', b'j', b'k']:
+        assert b_plus_tree.get_one(o) is None, f"{o} should be deleted"
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f']:
+        assert b_plus_tree.get_one(o) == o, f"{o} should exist"
+    close(fd, name)
+
+
+def test_delete_ge_5_tree_height_shrinks():
+    """delete_ge 删除绝大多数后树高收缩"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j', b'k']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_ge(b'b')
+    show(b_plus_tree.root)
+    assert b_plus_tree.root.is_leaf, "只剩一个元素，树应收缩为叶节点"
+    assert b_plus_tree.get_one(b'a') == b'a'
+    close(fd, name)
+
+
+def test_delete_ge_6_get_all_consistent():
+    """delete_ge 后 get_all 结果正确"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    keys = [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h', b'i', b'j']
+    for o in keys:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_ge(b'f')
+    show(b_plus_tree.root)
+    remaining = [o for o in keys if o < b'f']
+    assert b_plus_tree.get_all() == remaining
+    close(fd, name)
+
+
+def test_delete_ge_7_delete_within_leaf():
+    """切割点落在叶节点中间"""
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    for o in [b'a', b'b', b'c', b'd', b'e', b'f', b'g', b'h']:
+        b_plus_tree.add([(o, o)])
+    b_plus_tree.delete_ge(b'f')
+    show(b_plus_tree.root)
+    for o in [b'f', b'g', b'h']:
+        assert b_plus_tree.get_one(o) is None
+    for o in [b'a', b'b', b'c', b'd', b'e']:
+        assert b_plus_tree.get_one(o) == o
     close(fd, name)
 
 
