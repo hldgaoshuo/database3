@@ -4,10 +4,8 @@ from database import Database, new_database_from_meta, new_database
 from file import file_open
 from pager import new_pager
 from row import new_row
-from utils import new_int64
 from value.const import VALUE_TYPE_STRING, VALUE_TYPE_INT
 from value.value_int import new_value_int
-from value.value_int64 import new_value_int64
 from value.value_string import new_value_string
 
 
@@ -40,8 +38,8 @@ def test_add():
     table_col_names = ["name", "gender", "score"]
     table_col_types = [VALUE_TYPE_STRING, VALUE_TYPE_STRING, VALUE_TYPE_INT]
     db.create(table_name, table_col_names, table_col_types)
-    key = new_value_int64(new_int64(10))
-    row = new_row(new_value_int64(new_int64(10)), [new_value_string("xiaoming"), new_value_string("m"), new_value_int(90)])
+    key = new_value_int(10)
+    row = new_row(10, [new_value_string("xiaoming"), new_value_string("m"), new_value_int(90)])
     db.add(table_name, key, row)
 
 
@@ -52,8 +50,8 @@ def test_get_one():
     table_col_names = ["name", "gender", "score"]
     table_col_types = [VALUE_TYPE_STRING, VALUE_TYPE_STRING, VALUE_TYPE_INT]
     db.create(table_name, table_col_names, table_col_types)
-    key = new_value_int64(new_int64(10))
-    row = new_row(new_value_int64(new_int64(10)), [new_value_string("xiaoming"), new_value_string("m"), new_value_int(90)])
+    key = new_value_int(10)
+    row = new_row(10, [new_value_string("xiaoming"), new_value_string("m"), new_value_int(90)])
     db.add(table_name, key, row)
     result = db.get_one(table_name, key)
     result.show()

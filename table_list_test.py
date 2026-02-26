@@ -8,10 +8,9 @@ from pager import new_pager, Pager
 from row import new_row, new_row_from_bytes
 from table_list import Table, TableSeqGenerator, new_table_seq_generator, TableList, new_table_list_from_page_id, \
     new_table_list, new_table
-from utils import new_int64, from_buf
+from utils import from_buf
 from value.const import VALUE_TYPE_STRING, VALUE_TYPE_INT
 from value.value_int import new_value_int
-from value.value_int64 import new_value_int64
 from value.value_string import new_value_string
 
 
@@ -77,8 +76,8 @@ def close_table(fd: int, name: str) -> None:
 def test_table():
     name = inspect.currentframe().f_code.co_name
     fd, table = init_table(name)
-    key = new_value_int64(new_int64(10))
-    row = new_row(new_value_int64(new_int64(10)), [new_value_string("xiaoming"), new_value_string("m"), new_value_int(90)])
+    key = 10
+    row = new_row(10, [new_value_string("xiaoming"), new_value_string("m"), new_value_int(90)])
     _key = bytes(key)
     _row = bytes(row)
     key_vals = [(_key, _row)]

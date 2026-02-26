@@ -4,7 +4,7 @@ from value.value_bool import new_value_bool, new_value_bool_from_bytes
 
 def test_to_bytes():
     got = bytes(new_value_bool(True))
-    want = b'\x00\x00\x00\x03' + b'\x01'
+    want = b'\x00\x00\x00\x00\x00\x00\x00\x03' + b'\x01'
     assert got == want
 
 

@@ -1,22 +1,21 @@
 import io
 from utils import to_bytes, from_buf
 from value.value_bool import new_value_bool_from_buf
-from value.const import VALUE_TYPE_INT, VALUE_TYPE_STRING, VALUE_TYPE_BOOL, VALUE_TYPE_INT64
+from value.const import VALUE_TYPE_INT, VALUE_TYPE_STRING, VALUE_TYPE_BOOL
 from value.value_int import new_value_int_from_buf
-from value.value_int64 import ValueInt64, new_value_int64_from_buf
 from value.value_string import new_value_string_from_buf
 from value.value import Value
 
 
 class Row:
 
-    def __init__(self, oid: ValueInt64, vals: list[Value]):
-        self.oid: ValueInt64 = oid
+    def __init__(self, oid: int, vals: list[Value]):
+        self.oid: int = oid
         self.vals: list[Value] = vals
 
     def __bytes__(self):
         r = b''
-        r += bytes(self.oid)
+        r += to_bytes(self.oid)
         r += to_bytes(len(self.vals))
         for val in self.vals:
             r += bytes(val)
@@ -37,16 +36,13 @@ class Row:
             print(" ", end="")
 
 
-def new_row(oid: ValueInt64, vals: list[Value]):
+def new_row(oid: int, vals: list[Value]):
     r = Row(oid, vals)
     return r
 
 
 def new_row_from_buf(buf: io.BytesIO) -> Row:
-    oid_val_type = from_buf(buf, int)
-    if oid_val_type != VALUE_TYPE_INT64:
-        raise ValueError("oid 类型错误")
-    oid = new_value_int64_from_buf(buf)
+    oid = from_buf(buf, int)
     num_vals = from_buf(buf, int)
     vals = []
     for _ in range(num_vals):
