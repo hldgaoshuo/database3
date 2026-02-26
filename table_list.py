@@ -25,39 +25,53 @@ def new_table_seq_generator(pager: Pager, init_seq: int):
 
 class Table:
 
-    def __init__(self, name: str, seq: int, col_names: list[str], col_types: list[int], b_plus_tree: BPlusTree):
+    def __init__(self, name: str, col_names: list[str], col_types: list[int], data: BPlusTree):
         self.name: str = name
-        self.seq: int = seq
         self.col_names: list[str] = col_names
         self.col_types: list[int] = col_types
-        self.b_plus_tree: BPlusTree = b_plus_tree
+        self.data: BPlusTree = data
+        self.indexes: dict[tuple, BPlusTree] = {}  # key: (col_index, col_index...)
 
     def __bytes__(self):
         r = b''
         r += to_bytes(self.name)
-        r += to_bytes(self.seq)
         r += to_bytes(len(self.col_names))
         for col_name in self.col_names:
             r += to_bytes(col_name)
         for col_type in self.col_types:
             r += to_bytes(col_type)
+        r += to_bytes(self.data.seq)
+        r += to_bytes(len(self.indexes))
+        for index, tree in self.indexes.items():
+            r += to_bytes(len(index))
+            for col_index in index:
+                r += to_bytes(col_index)
+            r += to_bytes(tree.seq)
         return r
 
 
 def new_table(pager: Pager, free_list: FreeList, name: str, seq: int, col_names: list[str], col_types: list[int]) -> Table:
-    b_plus_tree = new_b_plus_tree(pager, seq, free_list)
-    return Table(name, seq, col_names, col_types, b_plus_tree)
+    data = new_b_plus_tree(pager, seq, free_list)
+    return Table(name, col_names, col_types, data)
 
 
 def new_table_from_bytes(pager: Pager, free_list: FreeList, buf: io.BytesIO) -> Table:
     name = from_buf(buf, str)
-    seq = from_buf(buf, int)
     num_cols = from_buf(buf, int)
     col_names = [from_buf(buf, str) for _ in range(num_cols)]
     col_types = [from_buf(buf, int) for _ in range(num_cols)]
+    seq = from_buf(buf, int)
     root_page_id = pager.root_page_id_get(seq)
-    b_plus_tree = new_b_plus_tree_from_root_page_id(pager, seq, free_list, root_page_id)
-    table = Table(name, seq, col_names, col_types, b_plus_tree)
+    num_indexes = from_buf(buf, int)
+    indexes = {}
+    for _ in range(num_indexes):
+        num_col_indexes = from_buf(buf, int)
+        index = tuple(from_buf(buf, int) for _ in range(num_col_indexes))
+        index_root_page_id = from_buf(buf, int)
+        indexes[index] = new_b_plus_tree_from_root_page_id(pager, seq, free_list, index_root_page_id)
+    data = new_b_plus_tree_from_root_page_id(pager, seq, free_list, root_page_id)
+    table = Table(name, col_names, col_types, data)
+    table.indexes = indexes
     return table
 
 

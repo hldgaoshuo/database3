@@ -32,19 +32,19 @@ class Database:
         _key = bytes(key)
         _row = bytes(row)
         key_vals = [(_key, _row)]
-        table.b_plus_tree.add(key_vals)
+        table.data.add(key_vals)
 
     def get_one(self, name: str, key: Value) -> Row:
         table = self.tables[name]
         _key = bytes(key)
-        _row = table.b_plus_tree.get_one(_key)
+        _row = table.data.get_one(_key)
         row = new_row_from_bytes(_row)
         return row
 
     def delete_one(self, name: str, key: Value):
         table = self.tables[name]
         _key = bytes(key)
-        table.b_plus_tree.delete_one(_key)
+        table.data.delete_one(_key)
 
 
 def new_database(pager: Pager) -> Database:

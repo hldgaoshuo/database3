@@ -64,7 +64,7 @@ def init_table(name: str) -> tuple[int, Table]:
         pager.magic_number_set()
         free_list = new_free_list(pager, META_PAGE_ID)
         b_plus_tree = new_b_plus_tree(pager, seq, free_list)
-    table = Table(name, seq, col_names, col_types, b_plus_tree)
+    table = Table(name, col_names, col_types, b_plus_tree)
     return fd, table
 
 
@@ -81,8 +81,8 @@ def test_table():
     _key = bytes(key)
     _row = bytes(row)
     key_vals = [(_key, _row)]
-    table.b_plus_tree.add(key_vals)
-    _row = table.b_plus_tree.get_one(_key)
+    table.data.add(key_vals)
+    _row = table.data.get_one(_key)
     row = new_row_from_bytes(_row)
     row.show()
     close_table(fd, name)
