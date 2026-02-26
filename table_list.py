@@ -62,15 +62,16 @@ def new_table_from_bytes(pager: Pager, free_list: FreeList, buf: io.BytesIO) -> 
     col_types = [from_buf(buf, int) for _ in range(num_cols)]
     seq = from_buf(buf, int)
     root_page_id = pager.root_page_id_get(seq)
+    data = new_b_plus_tree_from_root_page_id(pager, seq, free_list, root_page_id)
     num_indexes = from_buf(buf, int)
+    table = Table(name, col_names, col_types, data)
     indexes = {}
     for _ in range(num_indexes):
-        num_col_indexes = from_buf(buf, int)
-        index = tuple(from_buf(buf, int) for _ in range(num_col_indexes))
-        index_root_page_id = from_buf(buf, int)
+        num_index_cols = from_buf(buf, int)
+        index = tuple(from_buf(buf, int) for _ in range(num_index_cols))
+        index_seq = from_buf(buf, int)
+        index_root_page_id = pager.root_page_id_get(index_seq)
         indexes[index] = new_b_plus_tree_from_root_page_id(pager, seq, free_list, index_root_page_id)
-    data = new_b_plus_tree_from_root_page_id(pager, seq, free_list, root_page_id)
-    table = Table(name, col_names, col_types, data)
     table.indexes = indexes
     return table
 
