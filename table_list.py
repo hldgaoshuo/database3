@@ -71,7 +71,7 @@ def new_table_from_bytes(pager: Pager, free_list: FreeList, buf: io.BytesIO) -> 
         index = tuple(from_buf(buf, int) for _ in range(num_index_cols))
         index_seq = from_buf(buf, int)
         index_root_page_id = pager.root_page_id_get(index_seq)
-        indexes[index] = new_b_plus_tree_from_root_page_id(pager, seq, free_list, index_root_page_id)
+        indexes[index] = new_b_plus_tree_from_root_page_id(pager, index_seq, free_list, index_root_page_id)
     table.indexes = indexes
     return table
 
