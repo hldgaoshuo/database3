@@ -9,9 +9,9 @@ from value.value import Value
 
 class Row:
 
-    def __init__(self, oid: int, vals: list[Value]):
-        self.oid: int = oid
-        self.vals: list[Value] = vals
+    def __init__(self):
+        self.oid: int = 0
+        self.vals: list[Value] = []
 
     def __bytes__(self):
         r = b''
@@ -37,12 +37,15 @@ class Row:
 
 
 def new_row(oid: int, vals: list[Value]):
-    r = Row(oid, vals)
+    r = Row()
+    r.oid = oid
+    r.vals = vals
     return r
 
 
 def new_row_from_buf(buf: io.BytesIO) -> Row:
-    oid = from_buf(buf, int)
+    r = Row()
+    r.oid = from_buf(buf, int)
     num_vals = from_buf(buf, int)
     vals = []
     for _ in range(num_vals):
@@ -58,8 +61,8 @@ def new_row_from_buf(buf: io.BytesIO) -> Row:
             vals.append(val)
         else:
             raise ValueError("未知数据类型")
-    row = Row(oid, vals)
-    return row
+    r.vals = vals
+    return r
 
 
 def new_row_from_bytes(bytes_: bytes):

@@ -6,9 +6,9 @@ from value.value import Value
 
 class ValueString(Value):
 
-    def __init__(self, val: str):
-        self.val_type: int = VALUE_TYPE_STRING
-        self.val: str = val
+    def __init__(self):
+        self.val_type: int = 0
+        self.val: str = ""
 
     def __bytes__(self) -> bytes:
         r = b''
@@ -24,13 +24,16 @@ class ValueString(Value):
 
 
 def new_value_string(val: str):
-    r = ValueString(val)
+    r = ValueString()
+    r.val_type = VALUE_TYPE_STRING
+    r.val = val
     return r
 
 
 def new_value_string_from_buf(buf: io.BytesIO):
-    val = from_buf(buf, str)
-    r = ValueString(val)
+    r = ValueString()
+    r.val_type = VALUE_TYPE_STRING
+    r.val = from_buf(buf, str)
     return r
 
 

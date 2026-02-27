@@ -8,8 +8,8 @@ from utils import to_bytes, from_bytes
 
 class Pager:
 
-    def __init__(self, fd: int):
-        self.fd: int = fd
+    def __init__(self):
+        self.fd: int = 0
 
     def magic_number_set(self) -> None:
         offset = META_PAGE_ID * BYTES_PAGE
@@ -137,5 +137,6 @@ class Pager:
 
 
 def new_pager(fd: int) -> Pager:
-    pager = Pager(fd)
+    pager = Pager()
+    pager.fd = fd
     return pager

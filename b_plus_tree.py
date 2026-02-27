@@ -6,14 +6,13 @@ from utils import to_bytes, from_buf
 
 class BPlusTreeNode:
 
-    def __init__(self, pager: Pager, free_list: FreeList, is_leaf: bool, page_id: int, left_page_id: int,
-                 right_page_id: int):
-        self.pager: Pager = pager
-        self.free_list: FreeList = free_list
-        self.is_leaf: bool = is_leaf
-        self.page_id: int = page_id
-        self.left_page_id: int = left_page_id
-        self.right_page_id: int = right_page_id
+    def __init__(self):
+        self.pager: Pager | None = None
+        self.free_list: FreeList | None = None
+        self.is_leaf: bool = False
+        self.page_id: int = 0
+        self.left_page_id: int = 0
+        self.right_page_id: int = 0
         self.keys: list[bytes] = []
         self.vals: list[bytes] = []
         self.page_ids: list[int] = []
@@ -866,44 +865,49 @@ class BPlusTreeNode:
 
 
 def new_b_plus_tree_node(pager: Pager, free_list: FreeList, is_leaf: bool) -> BPlusTreeNode:
-    page_id = free_list.get_page_id()
-    node = BPlusTreeNode(pager, free_list, is_leaf, page_id, NULL_PAGE_ID, NULL_PAGE_ID)
+    node = BPlusTreeNode()
+    node.pager = pager
+    node.free_list = free_list
+    node.is_leaf = is_leaf
+    node.page_id = free_list.get_page_id()
+    node.left_page_id = NULL_PAGE_ID
+    node.right_page_id = NULL_PAGE_ID
+    node.keys = []
+    node.vals = []
+    node.page_ids = []
     return node
 
 
 def new_b_plus_tree_node_from_page_id(pager: Pager, free_list: FreeList, page_id: int) -> BPlusTreeNode:
+    node = BPlusTreeNode()
+    node.pager = pager
+    node.free_list = free_list
     buf = pager.page_get(page_id)
-    # 读取节点信息
-    is_leaf = from_buf(buf, bool)
+    node.is_leaf = from_buf(buf, bool)
     _page_id = from_buf(buf, int)
     if _page_id != page_id:
         raise ValueError("page_id 错误")
-    left_page_id = from_buf(buf, int)
-    right_page_id = from_buf(buf, int)
+    node.page_id = page_id
+    node.left_page_id = from_buf(buf, int)
+    node.right_page_id = from_buf(buf, int)
     num_keys = from_buf(buf, int)
-    keys = [from_buf(buf, bytes) for _ in range(num_keys)]
-    if is_leaf:
+    node.keys = [from_buf(buf, bytes) for _ in range(num_keys)]
+    if node.is_leaf:
         num_vals = from_buf(buf, int)
-        vals = [from_buf(buf, bytes) for _ in range(num_vals)]
-        node = BPlusTreeNode(pager, free_list, is_leaf, page_id, left_page_id, right_page_id)
-        node.keys = keys
-        node.vals = vals
+        node.vals = [from_buf(buf, bytes) for _ in range(num_vals)]
     else:
         num_page_ids = from_buf(buf, int)
-        page_ids = [from_buf(buf, int) for _ in range(num_page_ids)]
-        node = BPlusTreeNode(pager, free_list, is_leaf, page_id, left_page_id, right_page_id)
-        node.keys = keys
-        node.page_ids = page_ids
+        node.page_ids = [from_buf(buf, int) for _ in range(num_page_ids)]
     return node
 
 
 class BPlusTree:
 
-    def __init__(self, pager: Pager, seq: int, free_list: FreeList, root: BPlusTreeNode):
-        self.pager: Pager = pager
-        self.seq: int = seq
-        self.free_list: FreeList = free_list
-        self.root: BPlusTreeNode = root
+    def __init__(self):
+        self.pager: Pager | None = None
+        self.free_list: FreeList | None = None
+        self.seq: int = 0
+        self.root: BPlusTreeNode | None = None
 
     def get_all(self) -> list[bytes]:
         vals = self.root.get_ge(b'')
@@ -1032,13 +1036,21 @@ class BPlusTree:
             self.root = new_root
 
 
-def new_b_plus_tree(pager: Pager, seq: int, free_list: FreeList) -> BPlusTree:
-    root = new_b_plus_tree_node(pager, free_list, True)
-    root.persist()
-    pager.root_page_id_set(seq, root.page_id)
-    return BPlusTree(pager, seq, free_list, root)
+def new_b_plus_tree(pager: Pager, free_list: FreeList, seq: int) -> BPlusTree:
+    tree = BPlusTree()
+    tree.pager = pager
+    tree.free_list = free_list
+    tree.seq = seq
+    tree.root = new_b_plus_tree_node(pager, free_list, True)
+    tree.root.persist()
+    pager.root_page_id_set(seq, tree.root.page_id)
+    return tree
 
 
-def new_b_plus_tree_from_root_page_id(pager: Pager, seq: int, free_list: FreeList, root_page_id: int) -> BPlusTree:
-    root = new_b_plus_tree_node_from_page_id(pager, free_list, root_page_id)
-    return BPlusTree(pager, seq, free_list, root)
+def new_b_plus_tree_from_root_page_id(pager: Pager, free_list: FreeList, seq: int, root_page_id: int) -> BPlusTree:
+    tree = BPlusTree()
+    tree.pager = pager
+    tree.free_list = free_list
+    tree.seq = seq
+    tree.root = new_b_plus_tree_node_from_page_id(pager, free_list, root_page_id)
+    return tree

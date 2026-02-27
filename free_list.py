@@ -4,9 +4,9 @@ from utils import to_bytes, from_buf
 
 
 class PageIdGenerator:
-    def __init__(self, pager: Pager, init_page_id: int):
-        self.pager: Pager = pager
-        self.used_page_id: int = init_page_id
+    def __init__(self):
+        self.pager: Pager | None = None
+        self.used_page_id: int = 0
 
     def get_next_page_id(self):
         self.used_page_id += 1
@@ -14,16 +14,19 @@ class PageIdGenerator:
         return self.used_page_id
 
 
-def new_page_id_generator(pager: Pager, init_page_id: int):
-    return PageIdGenerator(pager, init_page_id)
+def new_page_id_generator(pager: Pager, init_page_id: int) -> PageIdGenerator:
+    id_gen = PageIdGenerator()
+    id_gen.pager = pager
+    id_gen.used_page_id = init_page_id
+    return id_gen
 
 
 class FreeListNode:
 
-    def __init__(self, pager: Pager, page_id: int, next_page_id: int):
-        self.pager: Pager = pager
-        self.page_id: int = page_id
-        self.next_page_id: int = next_page_id
+    def __init__(self):
+        self.pager: Pager | None = None
+        self.page_id: int = 0
+        self.next_page_id: int = 0
         self.unused: int = 0
         self.page_ids: list[int] = []
 
@@ -60,32 +63,37 @@ class FreeListNode:
 
 
 def new_free_list_node(pager: Pager, page_id: int, next_page_id: int) -> FreeListNode:
-    node = FreeListNode(pager, page_id, next_page_id)
+    node = FreeListNode()
+    node.pager = pager
+    node.page_id = page_id
+    node.next_page_id = next_page_id
+    node.unused = 0
+    node.page_ids = []
     return node
 
 
 def new_free_list_node_from_page_id(pager: Pager, page_id: int) -> FreeListNode:
+    node = FreeListNode()
+    node.pager = pager
     buf = pager.page_get(page_id)
     _page_id = from_buf(buf, int)
     if _page_id != page_id:
         raise ValueError("page_id 错误")
-    next_page_id = from_buf(buf, int)
-    unused = from_buf(buf, int)
+    node.page_id = page_id
+    node.next_page_id = from_buf(buf, int)
+    node.unused = from_buf(buf, int)
     num_page_ids = from_buf(buf, int)
-    page_ids = [from_buf(buf, int) for _ in range(num_page_ids)]
-    node = FreeListNode(pager, page_id, next_page_id)
-    node.unused = unused
-    node.page_ids = page_ids
+    node.page_ids = [from_buf(buf, int) for _ in range(num_page_ids)]
     return node
 
 
 class FreeList:
 
-    def __init__(self, pager: Pager, page_id_generator: PageIdGenerator, head: FreeListNode, tail: FreeListNode):
-        self.pager: Pager = pager
-        self.page_id_generator: PageIdGenerator = page_id_generator
-        self.head: FreeListNode = head
-        self.tail: FreeListNode = tail
+    def __init__(self):
+        self.pager: Pager | None = None
+        self.page_id_generator: PageIdGenerator | None = None
+        self.head: FreeListNode | None = None
+        self.tail: FreeListNode | None = None
 
     # 对外暴露使用
     def get_page_id(self) -> int:
@@ -147,19 +155,24 @@ class FreeList:
 
 
 def new_free_list(pager: Pager, init_page_id: int) -> FreeList:
+    free_list = FreeList()
+    free_list.pager = pager
     page_id_generator = new_page_id_generator(pager, init_page_id)
+    free_list.page_id_generator = page_id_generator
     head_page_id = page_id_generator.get_next_page_id()
     head = new_free_list_node(pager, head_page_id, NULL_PAGE_ID)
     head.persist()
     pager.head_page_id_set(head.page_id)
     pager.tail_page_id_set(head.page_id)
-    free_list = FreeList(pager, page_id_generator, head, head)
+    free_list.head = head
+    free_list.tail = head
     return free_list
 
 
 def new_free_list_from_page_id(pager: Pager, init_page_id: int, head_page_id: int, tail_page_id: int) -> FreeList:
-    page_id_generator = new_page_id_generator(pager, init_page_id)
-    head = new_free_list_node_from_page_id(pager, head_page_id)
-    tail = new_free_list_node_from_page_id(pager, tail_page_id)
-    free_list = FreeList(pager, page_id_generator, head, tail)
+    free_list = FreeList()
+    free_list.pager = pager
+    free_list.page_id_generator = new_page_id_generator(pager, init_page_id)
+    free_list.head = new_free_list_node_from_page_id(pager, head_page_id)
+    free_list.tail = new_free_list_node_from_page_id(pager, tail_page_id)
     return free_list

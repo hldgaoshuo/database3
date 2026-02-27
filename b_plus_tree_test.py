@@ -25,11 +25,11 @@ def init(name: str) -> tuple[int, BPlusTree]:
         from_buf(meta, int)  # table_head_page_id
         from_buf(meta, int)  # table_tail_page_id
         root_page_id = from_buf(meta, int)
-        b_plus_tree = new_b_plus_tree_from_root_page_id(pager, seq, free_list, root_page_id)
+        b_plus_tree = new_b_plus_tree_from_root_page_id(pager, free_list, seq, root_page_id)
     else:
         pager.magic_number_set()
         free_list = new_free_list(pager, META_PAGE_ID)
-        b_plus_tree = new_b_plus_tree(pager, seq, free_list)
+        b_plus_tree = new_b_plus_tree(pager, free_list, seq)
     return fd, b_plus_tree
 
 
