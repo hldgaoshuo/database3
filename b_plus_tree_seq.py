@@ -1,7 +1,7 @@
 from pager import Pager
 
 
-class TableSeqGenerator:
+class BPlusTreeSeqGenerator:
     def __init__(self):
         self.pager: Pager | None = None
         self.next_seq: int = 0
@@ -9,12 +9,12 @@ class TableSeqGenerator:
     def get_next_seq(self):
         r = self.next_seq
         self.next_seq += 1
-        self.pager.table_seq_set(self.next_seq)
+        self.pager.b_plus_tree_seq_set(self.next_seq)
         return r
 
 
-def new_table_seq_generator(pager: Pager, init_seq: int):
-    r = TableSeqGenerator()
+def new_b_plus_tree_seq_generator(pager: Pager, init_seq: int):
+    r = BPlusTreeSeqGenerator()
     r.pager = pager
     r.next_seq = init_seq
     return r

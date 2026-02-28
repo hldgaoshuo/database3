@@ -40,7 +40,7 @@ def new_kv(name: str) -> KV:
         head_page_id = from_buf(meta, int)
         tail_page_id = from_buf(meta, int)
         free_list = new_free_list_from_page_id(pager, used_page_id, head_page_id, tail_page_id)
-        from_buf(meta, int)  # table_seq
+        from_buf(meta, int)  # b_plus_tree_seq
         from_buf(meta, int)  # table_head_page_id
         from_buf(meta, int)  # table_tail_page_id
         root_page_id = from_buf(meta, int)

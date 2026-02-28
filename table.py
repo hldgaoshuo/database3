@@ -32,12 +32,12 @@ class Table:
         return r
 
 
-def new_table(name: str, col_names: list[str], col_types: list[int], pager: Pager, free_list: FreeList, seq: int) -> Table:
+def new_table(name: str, col_names: list[str], col_types: list[int], pager: Pager, free_list: FreeList, data_seq: int) -> Table:
     r = Table()
     r.name = name
     r.col_names = col_names
     r.col_types = col_types
-    r.data = new_b_plus_tree(pager, free_list, seq)
+    r.data = new_b_plus_tree(pager, free_list, data_seq)
     r.indexes = {}
     return r
 

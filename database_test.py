@@ -22,13 +22,13 @@ def init(name: str) -> tuple[int, Database]:
     return fd, db
 
 
-def test_create():
+def test_create_table():
     name = inspect.currentframe().f_code.co_name
     fd, db = init(name)
     table_name = "data"
     table_col_names = ["name", "gender", "score"]
     table_col_types = [VALUE_TYPE_STRING, VALUE_TYPE_STRING, VALUE_TYPE_INT]
-    db.create(table_name, table_col_names, table_col_types)
+    db.create_table(table_name, table_col_names, table_col_types)
 
 
 def test_add():
@@ -37,7 +37,7 @@ def test_add():
     table_name = "data"
     table_col_names = ["name", "gender", "score"]
     table_col_types = [VALUE_TYPE_STRING, VALUE_TYPE_STRING, VALUE_TYPE_INT]
-    db.create(table_name, table_col_names, table_col_types)
+    db.create_table(table_name, table_col_names, table_col_types)
     key = new_value_int(10)
     row = new_row(10, [new_value_string("xiaoming"), new_value_string("m"), new_value_int(90)])
     db.add(table_name, key, row)
@@ -49,7 +49,7 @@ def test_get_one():
     table_name = "data"
     table_col_names = ["name", "gender", "score"]
     table_col_types = [VALUE_TYPE_STRING, VALUE_TYPE_STRING, VALUE_TYPE_INT]
-    db.create(table_name, table_col_names, table_col_types)
+    db.create_table(table_name, table_col_names, table_col_types)
     key = new_value_int(10)
     row = new_row(10, [new_value_string("xiaoming"), new_value_string("m"), new_value_int(90)])
     db.add(table_name, key, row)
