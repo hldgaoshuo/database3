@@ -2,34 +2,18 @@ import inspect
 import os
 import pytest
 
-from b_plus_tree import BPlusTreeNode, BPlusTree, new_b_plus_tree_node_from_page_id, new_b_plus_tree, new_b_plus_tree_from_root_page_id
-from free_list import new_free_list, new_free_list_from_page_id
-from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS
+from b_plus_tree import BPlusTreeNode, BPlusTree, new_b_plus_tree_node_from_page_id, new_b_plus_tree
+from free_list import new_free_list
+from const import META_PAGE_ID
 from file import file_open
 from pager import new_pager
-from utils import from_buf
 
 
 def init(name: str) -> tuple[int, BPlusTree]:
-    seq = 0
     fd = file_open(f'{name}.db')
     pager = new_pager(fd)
-    meta = pager.page_get(META_PAGE_ID)
-    magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
-    if magic_number_bs == MAGIC_NUMBER_BS:
-        used_page_id = from_buf(meta, int)
-        head_page_id = from_buf(meta, int)
-        tail_page_id = from_buf(meta, int)
-        free_list = new_free_list_from_page_id(pager, used_page_id, head_page_id, tail_page_id)
-        from_buf(meta, int)  # b_plus_tree_seq
-        from_buf(meta, int)  # table_head_page_id
-        from_buf(meta, int)  # table_tail_page_id
-        root_page_id = from_buf(meta, int)
-        b_plus_tree = new_b_plus_tree_from_root_page_id(pager, free_list, seq, root_page_id)
-    else:
-        pager.magic_number_set()
-        free_list = new_free_list(pager, META_PAGE_ID)
-        b_plus_tree = new_b_plus_tree(pager, free_list, seq)
+    free_list = new_free_list(pager, META_PAGE_ID)
+    b_plus_tree = new_b_plus_tree(pager, free_list, 0, True)
     return fd, b_plus_tree
 
 

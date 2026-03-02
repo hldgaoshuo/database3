@@ -1036,21 +1036,16 @@ class BPlusTree:
             self.root = new_root
 
 
-def new_b_plus_tree(pager: Pager, free_list: FreeList, seq: int) -> BPlusTree:
+def new_b_plus_tree(pager: Pager, free_list: FreeList, seq: int, is_seq_new: bool) -> BPlusTree:
     tree = BPlusTree()
     tree.pager = pager
     tree.free_list = free_list
     tree.seq = seq
-    tree.root = new_b_plus_tree_node(pager, free_list, True)
-    tree.root.persist()
-    pager.root_page_id_set(seq, tree.root.page_id)
-    return tree
-
-
-def new_b_plus_tree_from_root_page_id(pager: Pager, free_list: FreeList, seq: int, root_page_id: int) -> BPlusTree:
-    tree = BPlusTree()
-    tree.pager = pager
-    tree.free_list = free_list
-    tree.seq = seq
-    tree.root = new_b_plus_tree_node_from_page_id(pager, free_list, root_page_id)
+    if is_seq_new:
+        tree.root = new_b_plus_tree_node(pager, free_list, True)
+        tree.root.persist()
+        pager.root_page_id_set(seq, tree.root.page_id)
+    else:
+        root_page_id = pager.root_page_id_get(seq)
+        tree.root = new_b_plus_tree_node_from_page_id(pager, free_list, root_page_id)
     return tree

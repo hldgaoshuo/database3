@@ -2,6 +2,7 @@ from pager import Pager
 
 
 class BPlusTreeSeqGenerator:
+
     def __init__(self):
         self.pager: Pager | None = None
         self.next_seq: int = 0

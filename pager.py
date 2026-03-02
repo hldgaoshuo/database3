@@ -2,7 +2,7 @@ import os
 import io
 
 from const import BYTES_PAGE, META_PAGE_ID, MAGIC_NUMBER_BS, BYTES_MAGIC_NUMBER, BYTES_USED_PAGE_ID, BYTES_HEAD_PAGE_ID, \
-    BYTES_TAIL_PAGE_ID, BYTES_B_PLUS_TREE_SEQ, BYTES_TABLE_HEAD_PAGE_ID, BYTES_TABLE_TAIL_PAGE_ID, BYTES_ROOT_PAGE_ID
+    BYTES_TAIL_PAGE_ID, BYTES_B_PLUS_TREE_SEQ, BYTES_DATABASE_SEQ, BYTES_ROOT_PAGE_ID
 from utils import to_bytes, from_bytes
 
 
@@ -59,7 +59,7 @@ class Pager:
         bs = to_bytes(seq)
         self.file_update(offset, bs)
 
-    def table_head_page_id_set(self, table_head_page_id: int) -> None:
+    def database_seq_set(self, database_page_id: int) -> None:
         offset = (
                 META_PAGE_ID * BYTES_PAGE +
                 BYTES_MAGIC_NUMBER +
@@ -68,20 +68,7 @@ class Pager:
                 BYTES_TAIL_PAGE_ID +
                 BYTES_B_PLUS_TREE_SEQ
         )
-        bs = to_bytes(table_head_page_id)
-        self.file_update(offset, bs)
-
-    def table_tail_page_id_set(self, table_tail_page_id: int) -> None:
-        offset = (
-                META_PAGE_ID * BYTES_PAGE +
-                BYTES_MAGIC_NUMBER +
-                BYTES_USED_PAGE_ID +
-                BYTES_HEAD_PAGE_ID +
-                BYTES_TAIL_PAGE_ID +
-                BYTES_B_PLUS_TREE_SEQ +
-                BYTES_TABLE_HEAD_PAGE_ID
-        )
-        bs = to_bytes(table_tail_page_id)
+        bs = to_bytes(database_page_id)
         self.file_update(offset, bs)
 
     def root_page_id_set(self, seq: int, root_page_id: int) -> None:
@@ -92,8 +79,7 @@ class Pager:
                 BYTES_HEAD_PAGE_ID +
                 BYTES_TAIL_PAGE_ID +
                 BYTES_B_PLUS_TREE_SEQ +
-                BYTES_TABLE_HEAD_PAGE_ID +
-                BYTES_TABLE_TAIL_PAGE_ID +
+                BYTES_DATABASE_SEQ +
                 BYTES_ROOT_PAGE_ID * seq
         )
         bs = to_bytes(root_page_id)
@@ -107,8 +93,7 @@ class Pager:
                 BYTES_HEAD_PAGE_ID +
                 BYTES_TAIL_PAGE_ID +
                 BYTES_B_PLUS_TREE_SEQ +
-                BYTES_TABLE_HEAD_PAGE_ID +
-                BYTES_TABLE_TAIL_PAGE_ID +
+                BYTES_DATABASE_SEQ +
                 BYTES_ROOT_PAGE_ID * seq
         )
         root_page_id_bs = self.file_read(offset, BYTES_ROOT_PAGE_ID)
