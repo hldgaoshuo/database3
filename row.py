@@ -10,13 +10,11 @@ from value.value import Value
 class Row:
 
     def __init__(self):
-        self.oid: int = 0
         self.vals: list[Value] = []
         self.vals_iter = iter(self.vals)
 
     def __bytes__(self):
         r = b''
-        r += to_bytes(self.oid)
         r += to_bytes(len(self.vals))
         for val in self.vals:
             r += bytes(val)
@@ -42,10 +40,12 @@ class Row:
             val.show()
             print(" ", end="")
 
+    def add(self, val: Value):
+        self.vals.append(val)
 
-def new_row(oid: int, vals: list[Value]):
+
+def new_row(vals: list[Value]):
     r = Row()
-    r.oid = oid
     r.vals = vals
     r.vals_iter = iter(r.vals)
     return r
@@ -53,7 +53,6 @@ def new_row(oid: int, vals: list[Value]):
 
 def new_row_from_buf(buf: io.BytesIO) -> Row:
     r = Row()
-    r.oid = from_buf(buf, int)
     num_vals = from_buf(buf, int)
     vals = []
     for _ in range(num_vals):

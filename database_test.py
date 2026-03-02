@@ -47,13 +47,13 @@ def test_add():
     index = table.indexes[(0,)]
 
     key = new_value_int(OID)
-    val = new_row(OID, [new_value_string(NAME), new_value_string(GENDER), new_value_int(SCORE)])
+    val = new_row([new_value_string(NAME), new_value_string(GENDER), new_value_int(SCORE)])
     _key = bytes(key)
     _val = bytes(val)
     table.data.add([(_key, _val)])
 
-    key = new_value_string(NAME)
-    val = new_row(OID, [new_value_int(OID)])
+    key = new_row([new_value_string(NAME)])
+    val = new_row([new_value_int(OID)])
     _key = bytes(key)
     _val = bytes(val)
     index.add([(_key, _val)])
@@ -64,7 +64,7 @@ def test_get_one():
     table = db.get_table(TB_NAME)
 
     key = new_value_int(OID)
-    val = new_row(OID, [new_value_string(NAME), new_value_string(GENDER), new_value_int(SCORE)])
+    val = new_row([new_value_string(NAME), new_value_string(GENDER), new_value_int(SCORE)])
     _key = bytes(key)
     _val = bytes(val)
 
@@ -80,8 +80,8 @@ def test_get_one_by_index():
     table = db.get_table(TB_NAME)
     index = table.indexes[(0,)]
 
-    key = new_value_string(NAME)
-    val = new_row(OID, [new_value_int(OID)])
+    key = new_row([new_value_string(NAME)])
+    val = new_row([new_value_int(OID)])
     _key = bytes(key)
     _val = bytes(val)
     _val_get = index.get_one(_key)
@@ -90,7 +90,7 @@ def test_get_one_by_index():
     assert val_get == val
 
     for key in val_get:
-        val = new_row(OID, [new_value_string(NAME), new_value_string(GENDER), new_value_int(SCORE)])
+        val = new_row([new_value_string(NAME), new_value_string(GENDER), new_value_int(SCORE)])
         _key = bytes(key)
         _val = bytes(val)
         _val_get = table.data.get_one(_key)
