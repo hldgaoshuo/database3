@@ -9,6 +9,10 @@ from value.value_string import new_value_string
 
 DB_NAME = 'test_kv'
 TB_NAME = 'data'
+OID = 1772433935337884
+NAME = "xiaoming"
+GENDER = "m"
+SCORE = 90
 
 
 def init(name: str) -> tuple[int, Database]:
@@ -39,22 +43,58 @@ def test_create_index():
 
 def test_add():
     _, db = init(DB_NAME)
-    key = new_value_int(10)
-    val = new_row(10, [new_value_string("xiaoming"), new_value_string("m"), new_value_int(90)])
+    table = db.get_table(TB_NAME)
+    index = table.indexes[(0,)]
+
+    key = new_value_int(OID)
+    val = new_row(OID, [new_value_string(NAME), new_value_string(GENDER), new_value_int(SCORE)])
     _key = bytes(key)
     _val = bytes(val)
-    table = db.get_table(TB_NAME)
     table.data.add([(_key, _val)])
+
+    key = new_value_string(NAME)
+    val = new_row(OID, [new_value_int(OID)])
+    _key = bytes(key)
+    _val = bytes(val)
+    index.add([(_key, _val)])
 
 
 def test_get_one():
     _, db = init(DB_NAME)
     table = db.get_table(TB_NAME)
-    key = new_value_int(10)
-    val = new_row(10, [new_value_string("xiaoming"), new_value_string("m"), new_value_int(90)])
+
+    key = new_value_int(OID)
+    val = new_row(OID, [new_value_string(NAME), new_value_string(GENDER), new_value_int(SCORE)])
     _key = bytes(key)
     _val = bytes(val)
-    result_row = table.data.get_one(_key)
-    assert result_row == _val
-    result = new_row_from_bytes(result_row)
-    assert result == val
+
+    _val_get = table.data.get_one(_key)
+    assert _val_get == _val
+
+    val_get = new_row_from_bytes(_val_get)
+    assert val_get == val
+
+
+def test_get_one_by_index():
+    _, db = init(DB_NAME)
+    table = db.get_table(TB_NAME)
+    index = table.indexes[(0,)]
+
+    key = new_value_string(NAME)
+    val = new_row(OID, [new_value_int(OID)])
+    _key = bytes(key)
+    _val = bytes(val)
+    _val_get = index.get_one(_key)
+    assert _val_get == _val
+    val_get = new_row_from_bytes(_val_get)
+    assert val_get == val
+
+    key = val_get.vals[0]
+    val = new_row(OID, [new_value_string(NAME), new_value_string(GENDER), new_value_int(SCORE)])
+    _key = bytes(key)
+    _val = bytes(val)
+    _val_get = table.data.get_one(_key)
+    assert _val_get == _val
+    val_get = new_row_from_bytes(_val_get)
+    assert val_get == val
+

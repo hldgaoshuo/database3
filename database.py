@@ -29,8 +29,8 @@ class Database:
         return table
 
     def create_index(self, table_name: str, col_names: list[str]):
+        # todo 目前 index 只支持唯一索引
         table = self.get_table(table_name)
-        print(f'table name: {table.name}')
 
         col_indexes = []
         for col_name in col_names:
