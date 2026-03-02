@@ -89,12 +89,11 @@ def test_get_one_by_index():
     val_get = new_row_from_bytes(_val_get)
     assert val_get == val
 
-    key = val_get.vals[0]
-    val = new_row(OID, [new_value_string(NAME), new_value_string(GENDER), new_value_int(SCORE)])
-    _key = bytes(key)
-    _val = bytes(val)
-    _val_get = table.data.get_one(_key)
-    assert _val_get == _val
-    val_get = new_row_from_bytes(_val_get)
-    assert val_get == val
-
+    for key in val_get:
+        val = new_row(OID, [new_value_string(NAME), new_value_string(GENDER), new_value_int(SCORE)])
+        _key = bytes(key)
+        _val = bytes(val)
+        _val_get = table.data.get_one(_key)
+        assert _val_get == _val
+        val_get = new_row_from_bytes(_val_get)
+        assert val_get == val

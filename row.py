@@ -12,6 +12,7 @@ class Row:
     def __init__(self):
         self.oid: int = 0
         self.vals: list[Value] = []
+        self.vals_iter = iter(self.vals)
 
     def __bytes__(self):
         r = b''
@@ -29,6 +30,12 @@ class Row:
                 return False
         return True
 
+    def __iter__(self):
+        return self.vals_iter
+
+    def __next__(self):
+        return next(self.vals_iter)
+
     def show(self):
         print()
         for val in self.vals:
@@ -40,6 +47,7 @@ def new_row(oid: int, vals: list[Value]):
     r = Row()
     r.oid = oid
     r.vals = vals
+    r.vals_iter = iter(r.vals)
     return r
 
 
@@ -62,6 +70,7 @@ def new_row_from_buf(buf: io.BytesIO) -> Row:
         else:
             raise ValueError("未知数据类型")
     r.vals = vals
+    r.vals_iter = iter(r.vals)
     return r
 
 
