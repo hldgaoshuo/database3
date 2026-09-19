@@ -166,6 +166,22 @@ class BPlusTreeNode:
         result = child.get_one(key)
         return result
 
+    def items(self) -> list[tuple[bytes, bytes]]:
+        if self.is_leaf:
+            result = self._items()
+            return result
+        child = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, self.page_ids[0])
+        result = child.items()
+        return result
+
+    def _items(self) -> list[tuple[bytes, bytes]]:
+        result = list(zip(self.keys, self.vals))
+        node = self
+        while node.right_page_id != NULL_PAGE_ID:
+            node = new_b_plus_tree_node_from_page_id(self.pager, self.free_list, node.right_page_id)
+            result.extend(zip(node.keys, node.vals))
+        return result
+
     def _get_one(self, key: bytes) -> bytes | None:
         try:
             i = self.keys.index(key)
@@ -912,6 +928,10 @@ class BPlusTree:
     def get_all(self) -> list[bytes]:
         vals = self.root.get_ge(b'')
         return vals
+
+    def items(self) -> list[tuple[bytes, bytes]]:
+        items = self.root.items()
+        return items
 
     def get_lt(self, key: bytes) -> list[bytes]:
         vals = self.root.get_lt(key)

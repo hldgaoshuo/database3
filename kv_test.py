@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from buffer_pool_manager import new_buffer_pool_manager
@@ -9,6 +11,11 @@ from pager import new_pager
 from utils import from_bytes, from_buf
 
 KV_NAME = 'test_kv'
+
+
+def teardown_module():
+    if os.path.exists(f'{KV_NAME}.db'):
+        os.remove(f'{KV_NAME}.db')
 
 
 def init(name: str) -> tuple[int, KV]:

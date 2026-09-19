@@ -1,3 +1,5 @@
+import os
+
 from buffer_pool_manager import new_buffer_pool_manager
 from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS, BUFFER_POOL_SIZE
 from database import Database, new_database_from_meta, new_database
@@ -14,6 +16,11 @@ OID = 1772433935337884
 NAME = "xiaoming"
 GENDER = "m"
 SCORE = 90
+
+
+def teardown_module():
+    if os.path.exists(f'{DB_NAME}.db'):
+        os.remove(f'{DB_NAME}.db')
 
 
 def init(name: str) -> tuple[int, Database]:

@@ -699,5 +699,15 @@ def test_delete_ge_7_delete_within_leaf():
     close(fd, name)
 
 
+def test_items():
+    name = inspect.currentframe().f_code.co_name
+    fd, b_plus_tree = init(name)
+    assert b_plus_tree.items() == []
+    key_vals = [(str(i).encode(), str(i * 10).encode()) for i in range(10)]
+    b_plus_tree.add(key_vals)
+    assert b_plus_tree.items() == key_vals
+    close(fd, name)
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

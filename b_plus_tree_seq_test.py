@@ -1,4 +1,6 @@
 import inspect
+import os
+
 from buffer_pool_manager import new_buffer_pool_manager
 from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS, INIT_B_PLUS_TREE_SEQ, BUFFER_POOL_SIZE
 from file import file_open
@@ -33,3 +35,5 @@ def test_b_plus_tree_seq_gen():
     for _ in range(5):
         r = seq_gen.get_next_seq()
         print(r)
+    os.close(fd)
+    os.remove(f'{name}.db')
