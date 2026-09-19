@@ -3,15 +3,16 @@ import os
 import pytest
 
 from b_plus_tree import BPlusTreeNode, BPlusTree, new_b_plus_tree_node_from_page_id, new_b_plus_tree
+from buffer_pool_manager import new_buffer_pool_manager
 from free_list import new_free_list
-from const import META_PAGE_ID
+from const import META_PAGE_ID, BUFFER_POOL_SIZE
 from file import file_open
 from pager import new_pager
 
 
 def init(name: str) -> tuple[int, BPlusTree]:
     fd = file_open(f'{name}.db')
-    pager = new_pager(fd)
+    pager = new_buffer_pool_manager(new_pager(fd), BUFFER_POOL_SIZE)
     free_list = new_free_list(pager, META_PAGE_ID)
     b_plus_tree = new_b_plus_tree(pager, free_list, 0, True)
     return fd, b_plus_tree

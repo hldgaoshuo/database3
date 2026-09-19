@@ -1,4 +1,5 @@
-from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS
+from buffer_pool_manager import new_buffer_pool_manager
+from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS, BUFFER_POOL_SIZE
 from database import Database, new_database_from_meta, new_database
 from file import file_open
 from pager import new_pager
@@ -17,7 +18,7 @@ SCORE = 90
 
 def init(name: str) -> tuple[int, Database]:
     fd = file_open(f'{name}.db')
-    pager = new_pager(fd)
+    pager = new_buffer_pool_manager(new_pager(fd), BUFFER_POOL_SIZE)
     meta = pager.page_get(META_PAGE_ID)
     magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
     if magic_number_bs == MAGIC_NUMBER_BS:
@@ -33,12 +34,14 @@ def test_create_table():
     table_col_names = ["name", "gender", "score"]
     table_col_types = [VALUE_TYPE_STRING, VALUE_TYPE_STRING, VALUE_TYPE_INT]
     db.create_table(TB_NAME, table_col_names, table_col_types)
+    db.pager.flush_all_pages()
 
 
 def test_create_index():
     _, db = init(DB_NAME)
     index_col_names = ["name"]
     db.create_index(TB_NAME, index_col_names)
+    db.pager.flush_all_pages()
 
 
 def test_add():
@@ -57,6 +60,7 @@ def test_add():
     _key = bytes(key)
     _val = bytes(val)
     index.add([(_key, _val)])
+    db.pager.flush_all_pages()
 
 
 def test_get_one():

@@ -1,5 +1,6 @@
 import inspect
-from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS, INIT_B_PLUS_TREE_SEQ
+from buffer_pool_manager import new_buffer_pool_manager
+from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS, INIT_B_PLUS_TREE_SEQ, BUFFER_POOL_SIZE
 from file import file_open
 from pager import new_pager
 from b_plus_tree_seq import BPlusTreeSeqGenerator, new_b_plus_tree_seq_generator
@@ -8,7 +9,7 @@ from utils import from_buf
 
 def init_b_plus_tree_seq_gen(name: str) -> tuple[int, BPlusTreeSeqGenerator]:
     fd = file_open(f'{name}.db')
-    pager = new_pager(fd)
+    pager = new_buffer_pool_manager(new_pager(fd), BUFFER_POOL_SIZE)
     meta = pager.page_get(META_PAGE_ID)
     magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
     if magic_number_bs == MAGIC_NUMBER_BS:

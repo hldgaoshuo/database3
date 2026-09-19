@@ -1,7 +1,8 @@
 import os
 import inspect
 import pytest
-from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS, NULL_PAGE_ID
+from buffer_pool_manager import new_buffer_pool_manager
+from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS, NULL_PAGE_ID, BUFFER_POOL_SIZE
 from file import file_open
 from free_list import FreeList, new_free_list, new_free_list_from_page_id
 from pager import new_pager
@@ -10,7 +11,7 @@ from utils import from_buf
 
 def init(name: str) -> tuple[int, FreeList]:
     fd = file_open(f'{name}.db')
-    pager = new_pager(fd)
+    pager = new_buffer_pool_manager(new_pager(fd), BUFFER_POOL_SIZE)
     meta = pager.page_get(META_PAGE_ID)
     magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
     if magic_number_bs == MAGIC_NUMBER_BS:
