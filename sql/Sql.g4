@@ -38,7 +38,36 @@ insert
     ;
 
 select
-    : SELECT (ASTERISK | colList) FROM tableName=IDENTIFIER whereClause?
+    : SELECT selectList FROM tableName=IDENTIFIER whereClause? groupByClause? havingClause?
+    ;
+
+selectList
+    : ASTERISK
+    | selectItem (',' selectItem)*
+    ;
+
+selectItem
+    : IDENTIFIER
+    | aggFunc
+    ;
+
+aggFunc
+    : funcName '(' (ASTERISK | IDENTIFIER) ')'
+    ;
+
+funcName
+    : COUNT
+    | SUM
+    | MIN
+    | MAX
+    ;
+
+groupByClause
+    : GROUP BY colList
+    ;
+
+havingClause
+    : HAVING condition
     ;
 
 update
@@ -58,7 +87,7 @@ whereClause
     ;
 
 condition
-    : colName=IDENTIFIER op=compareOp literal
+    : (colName=IDENTIFIER | agg=aggFunc) op=compareOp literal
     ;
 
 compareOp
@@ -105,6 +134,13 @@ STRING  : S T R I N G ;
 BOOL    : B O O L ;
 TRUE    : T R U E ;
 FALSE   : F A L S E ;
+GROUP   : G R O U P ;
+BY      : B Y ;
+HAVING  : H A V I N G ;
+COUNT   : C O U N T ;
+SUM     : S U M ;
+MIN     : M I N ;
+MAX     : M A X ;
 
 ASTERISK        : '*' ;
 EQ              : '=' ;

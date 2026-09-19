@@ -80,6 +80,60 @@ class SqlListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by SqlParser#selectList.
+    def enterSelectList(self, ctx:SqlParser.SelectListContext):
+        pass
+
+    # Exit a parse tree produced by SqlParser#selectList.
+    def exitSelectList(self, ctx:SqlParser.SelectListContext):
+        pass
+
+
+    # Enter a parse tree produced by SqlParser#selectItem.
+    def enterSelectItem(self, ctx:SqlParser.SelectItemContext):
+        pass
+
+    # Exit a parse tree produced by SqlParser#selectItem.
+    def exitSelectItem(self, ctx:SqlParser.SelectItemContext):
+        pass
+
+
+    # Enter a parse tree produced by SqlParser#aggFunc.
+    def enterAggFunc(self, ctx:SqlParser.AggFuncContext):
+        pass
+
+    # Exit a parse tree produced by SqlParser#aggFunc.
+    def exitAggFunc(self, ctx:SqlParser.AggFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by SqlParser#funcName.
+    def enterFuncName(self, ctx:SqlParser.FuncNameContext):
+        pass
+
+    # Exit a parse tree produced by SqlParser#funcName.
+    def exitFuncName(self, ctx:SqlParser.FuncNameContext):
+        pass
+
+
+    # Enter a parse tree produced by SqlParser#groupByClause.
+    def enterGroupByClause(self, ctx:SqlParser.GroupByClauseContext):
+        pass
+
+    # Exit a parse tree produced by SqlParser#groupByClause.
+    def exitGroupByClause(self, ctx:SqlParser.GroupByClauseContext):
+        pass
+
+
+    # Enter a parse tree produced by SqlParser#havingClause.
+    def enterHavingClause(self, ctx:SqlParser.HavingClauseContext):
+        pass
+
+    # Exit a parse tree produced by SqlParser#havingClause.
+    def exitHavingClause(self, ctx:SqlParser.HavingClauseContext):
+        pass
+
+
     # Enter a parse tree produced by SqlParser#update.
     def enterUpdate(self, ctx:SqlParser.UpdateContext):
         pass

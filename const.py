@@ -27,3 +27,8 @@ OP_LT = 2
 OP_LE = 3
 OP_GT = 4
 OP_GE = 5
+
+AGG_COUNT = 1
+AGG_SUM = 2
+AGG_MIN = 3
+AGG_MAX = 4

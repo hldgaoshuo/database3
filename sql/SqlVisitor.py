@@ -49,6 +49,36 @@ class SqlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by SqlParser#selectList.
+    def visitSelectList(self, ctx:SqlParser.SelectListContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SqlParser#selectItem.
+    def visitSelectItem(self, ctx:SqlParser.SelectItemContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SqlParser#aggFunc.
+    def visitAggFunc(self, ctx:SqlParser.AggFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SqlParser#funcName.
+    def visitFuncName(self, ctx:SqlParser.FuncNameContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SqlParser#groupByClause.
+    def visitGroupByClause(self, ctx:SqlParser.GroupByClauseContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SqlParser#havingClause.
+    def visitHavingClause(self, ctx:SqlParser.HavingClauseContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by SqlParser#update.
     def visitUpdate(self, ctx:SqlParser.UpdateContext):
         return self.visitChildren(ctx)

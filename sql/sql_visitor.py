@@ -2,11 +2,20 @@ from sql.SqlParser import SqlParser
 from sql.SqlVisitor import SqlVisitor
 
 
+class AggCall:
+    """聚合调用：func 为 'COUNT' | 'SUM' | 'MIN' | 'MAX'，col_name 为 None 表示 COUNT(*)"""
+
+    def __init__(self):
+        self.func: str = ""
+        self.col_name: str | None = None
+
+
 class Condition:
-    """WHERE 条件：列名、比较运算符（'= < <= > >=' 原文）、字面量（Python 原生值）"""
+    """WHERE/HAVING 条件：左侧是列名或聚合调用（仅 HAVING），比较运算符原文，字面量（Python 原生值）"""
 
     def __init__(self):
         self.col_name: str = ""
+        self.agg: AggCall | None = None
         self.op: str = ""
         self.literal: int | str | bool = 0
 
@@ -37,8 +46,10 @@ class SelectStmt:
 
     def __init__(self):
         self.table_name: str = ""
-        self.col_names: list[str] | None = None  # None 表示 *
+        self.items: list | None = None  # None 表示 *；元素为 str（列名）或 AggCall
         self.conditions: list[Condition] = []
+        self.group_by: list[str] = []
+        self.having: Condition | None = None
 
 
 class UpdateStmt:
@@ -67,9 +78,17 @@ def literal_from_ctx(ctx: SqlParser.LiteralContext) -> int | str | bool:
     return False
 
 
+def agg_call_from_ctx(ctx: SqlParser.AggFuncContext) -> AggCall:
+    call = AggCall()
+    call.func = ctx.funcName().getText().upper()
+    call.col_name = None if ctx.IDENTIFIER() is None else ctx.IDENTIFIER().getText()
+    return call
+
+
 def condition_from_ctx(ctx: SqlParser.ConditionContext) -> Condition:
     condition = Condition()
-    condition.col_name = ctx.colName.text
+    condition.col_name = "" if ctx.colName is None else ctx.colName.text
+    condition.agg = None if ctx.agg is None else agg_call_from_ctx(ctx.agg)
     condition.op = ctx.op.getText()
     condition.literal = literal_from_ctx(ctx.literal())
     return condition
@@ -111,9 +130,17 @@ class StmtVisitor(SqlVisitor):
     def visitSelect(self, ctx: SqlParser.SelectContext) -> SelectStmt:
         stmt = SelectStmt()
         stmt.table_name = ctx.tableName.text
-        if ctx.ASTERISK() is None:
-            stmt.col_names = [identifier.getText() for identifier in ctx.colList().IDENTIFIER()]
+        select_list = ctx.selectList()
+        if select_list.ASTERISK() is None:
+            stmt.items = [item.IDENTIFIER().getText() if item.IDENTIFIER() is not None
+                          else agg_call_from_ctx(item.aggFunc())
+                          for item in select_list.selectItem()]
         stmt.conditions = conditions_from_ctx(ctx.whereClause())
+        if ctx.groupByClause() is not None:
+            stmt.group_by = [identifier.getText()
+                             for identifier in ctx.groupByClause().colList().IDENTIFIER()]
+        if ctx.havingClause() is not None:
+            stmt.having = condition_from_ctx(ctx.havingClause().condition())
         return stmt
 
     def visitUpdate(self, ctx: SqlParser.UpdateContext) -> UpdateStmt:

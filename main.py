@@ -24,6 +24,9 @@ def __main():
     rows = execute_sql(db, "SELECT * FROM data WHERE score > 80")
     for row in rows:
         row.show()
+    rows = execute_sql(db, "SELECT gender, COUNT(*), SUM(score) FROM data GROUP BY gender")
+    for row in rows:
+        row.show()
     pager.flush_all_pages()
 
 

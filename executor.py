@@ -1,10 +1,13 @@
-from const import OP_EQ, OP_LT, OP_LE, OP_GT, OP_GE
+from const import OP_EQ, OP_LT, OP_LE, OP_GT, OP_GE, AGG_COUNT, AGG_SUM, AGG_MIN, AGG_MAX
 from oid import get_oid
 from row import Row, new_row, new_row_from_bytes
 from table import Table
 from utils import from_bytes
+from value.const import VALUE_TYPE_INT, VALUE_TYPE_STRING, VALUE_TYPE_BOOL
 from value.value import Value
+from value.value_bool import new_value_bool
 from value.value_int import new_value_int
+from value.value_string import new_value_string
 
 
 class Executor:
@@ -36,6 +39,22 @@ def index_val(oid: int) -> bytes:
 def oid_from_key(key_bs: bytes) -> int:
     # 主树 key 是 ValueInt 序列化：val_type(8 字节) + val(8 字节)
     return from_bytes(key_bs[8:], int)
+
+
+def new_value(literal: int | str | bool, col_type: int) -> Value:
+    if col_type == VALUE_TYPE_INT:
+        if type(literal) is not int:
+            raise ValueError(f"类型不匹配：期望 INT，实际 {literal!r}")
+        return new_value_int(literal)
+    if col_type == VALUE_TYPE_STRING:
+        if type(literal) is not str:
+            raise ValueError(f"类型不匹配：期望 STRING，实际 {literal!r}")
+        return new_value_string(literal)
+    if col_type == VALUE_TYPE_BOOL:
+        if type(literal) is not bool:
+            raise ValueError(f"类型不匹配：期望 BOOL，实际 {literal!r}")
+        return new_value_bool(literal)
+    raise ValueError(f"未知列类型 {col_type}")
 
 
 class ValuesExecutor(Executor):
@@ -215,6 +234,77 @@ class UpdateExecutor(Executor):
         return oid, row_new
 
 
+class AggregationExecutor(Executor):
+    """
+    哈希聚合（对齐 BusTub 的 SimpleAggregationHashTable）。
+    items 是输出列规格，顺序即 SELECT 顺序：
+      ('col', group_pos)        —— 分组列，group_pos 是其在 group_col_indexes 中的位置
+      (AGG_xxx, col_index|None) —— 聚合列，None 表示 COUNT(*)
+    聚合结果没有 oid，产出 (None, row)。
+    暂不支持 NULL：空输入且无分组列时，COUNT 输出 0，其余聚合抛 ValueError。
+    """
+
+    def __init__(self):
+        self.child: Executor | None = None
+        self.group_col_indexes: list[int] = []
+        self.items: list[tuple] = []
+        self.out_col_types: list[int] = []
+        self.rows_iter = None
+
+    def __iter__(self) -> 'AggregationExecutor':
+        return self
+
+    def __next__(self) -> tuple[bytes | None, Row]:
+        if self.rows_iter is None:
+            self.rows_iter = iter(self._aggregate())
+        return next(self.rows_iter)
+
+    def _aggregate(self) -> list[tuple[bytes | None, Row]]:
+        groups: dict[tuple, list] = {}
+        for _, row in self.child:
+            key = tuple(row.vals[i].val for i in self.group_col_indexes)
+            accs = groups.get(key)
+            if accs is None:
+                accs = [None] * len(self.items)
+                groups[key] = accs
+            for i, item in enumerate(self.items):
+                if item[0] != 'col':
+                    self._combine(accs, i, item, row)
+        if not groups and len(self.group_col_indexes) == 0:
+            # 无 GROUP BY 时全表一组，空表也要输出一行（COUNT 为 0）
+            return [(None, self._emit(tuple(), [None] * len(self.items)))]
+        return [(None, self._emit(key, accs)) for key, accs in groups.items()]
+
+    def _combine(self, accs: list, i: int, item: tuple, row: Row) -> None:
+        func, col_index = item
+        if func == AGG_COUNT:
+            accs[i] = (accs[i] or 0) + 1
+            return
+        val = row.vals[col_index].val
+        if accs[i] is None:
+            accs[i] = val
+        elif func == AGG_SUM:
+            accs[i] += val
+        elif func == AGG_MIN:
+            accs[i] = min(accs[i], val)
+        elif func == AGG_MAX:
+            accs[i] = max(accs[i], val)
+
+    def _emit(self, key: tuple, accs: list) -> Row:
+        vals = []
+        for i, item in enumerate(self.items):
+            if item[0] == 'col':
+                raw = key[item[1]]
+            elif accs[i] is None and item[0] == AGG_COUNT:
+                raw = 0
+            elif accs[i] is None:
+                raise ValueError("空表上仅 COUNT 聚合有定义（暂不支持 NULL）")
+            else:
+                raw = accs[i]
+            vals.append(new_value(raw, self.out_col_types[i]))
+        return new_row(vals)
+
+
 def new_values_executor(rows: list[Row]) -> ValuesExecutor:
     executor = ValuesExecutor()
     executor.rows = rows
@@ -272,4 +362,14 @@ def new_update_executor(table: Table, child: Executor, assignments: list[tuple[i
     executor.table = table
     executor.child = child
     executor.assignments = assignments
+    return executor
+
+
+def new_aggregation_executor(child: Executor, group_col_indexes: list[int], items: list[tuple],
+                             out_col_types: list[int]) -> AggregationExecutor:
+    executor = AggregationExecutor()
+    executor.child = child
+    executor.group_col_indexes = group_col_indexes
+    executor.items = items
+    executor.out_col_types = out_col_types
     return executor

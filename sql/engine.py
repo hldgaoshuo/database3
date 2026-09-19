@@ -1,20 +1,18 @@
 from antlr4 import InputStream, CommonTokenStream
 
-from const import OP_EQ, OP_LT, OP_LE, OP_GT, OP_GE
+from const import OP_EQ, OP_LT, OP_LE, OP_GT, OP_GE, AGG_COUNT, AGG_SUM, AGG_MIN, AGG_MAX
 from database import Database
 from executor import Executor, new_values_executor, new_seq_scan_executor, new_index_scan_executor, \
-    new_filter_executor, new_projection_executor, new_insert_executor, new_update_executor, new_delete_executor
+    new_filter_executor, new_projection_executor, new_insert_executor, new_update_executor, new_delete_executor, \
+    new_aggregation_executor, new_value
 from row import Row, new_row
 from sql.SqlLexer import SqlLexer
 from sql.SqlParser import SqlParser
-from sql.sql_visitor import StmtVisitor, Condition, CreateTableStmt, CreateIndexStmt, InsertStmt, \
+from sql.sql_visitor import StmtVisitor, Condition, AggCall, CreateTableStmt, CreateIndexStmt, InsertStmt, \
     SelectStmt, UpdateStmt, DeleteStmt
 from table import Table
 from value.const import VALUE_TYPE_INT, VALUE_TYPE_STRING, VALUE_TYPE_BOOL
 from value.value import Value
-from value.value_bool import new_value_bool
-from value.value_int import new_value_int
-from value.value_string import new_value_string
 
 OP_STR_TO_CONST = {
     '=': OP_EQ,
@@ -22,6 +20,13 @@ OP_STR_TO_CONST = {
     '<=': OP_LE,
     '>': OP_GT,
     '>=': OP_GE,
+}
+
+AGG_FUNC_STR_TO_CONST = {
+    'COUNT': AGG_COUNT,
+    'SUM': AGG_SUM,
+    'MIN': AGG_MIN,
+    'MAX': AGG_MAX,
 }
 
 TYPE_NAME_TO_CONST = {
@@ -60,8 +65,10 @@ def execute_sql(db: Database, sql_text: str):
         return sum(1 for _ in executor)
     if isinstance(stmt, SelectStmt):
         executor = build_scan(table, stmt.conditions)
-        if stmt.col_names is not None:
-            col_indexes = [col_index_of(table, col_name) for col_name in stmt.col_names]
+        if has_aggregation(stmt):
+            executor = build_aggregation(table, executor, stmt)
+        elif stmt.items is not None:
+            col_indexes = [col_index_of(table, col_name) for col_name in stmt.items]
             executor = new_projection_executor(executor, col_indexes)
         return [row for _, row in executor]
     if isinstance(stmt, UpdateStmt):
@@ -77,6 +84,73 @@ def execute_sql(db: Database, sql_text: str):
     raise ValueError(f"不支持的语句 {type(stmt)}")
 
 
+def has_aggregation(stmt: SelectStmt) -> bool:
+    if stmt.group_by or stmt.having is not None:
+        return True
+    return any(isinstance(item, AggCall) for item in stmt.items or [])
+
+
+def build_aggregation(table: Table, child: Executor, stmt: SelectStmt) -> Executor:
+    """聚合查询：分组列必须在 GROUP BY 中；HAVING 映射为聚合输出上的 Filter。"""
+    if stmt.items is None:
+        raise ValueError("聚合查询不支持 SELECT *")
+    for item in stmt.items:
+        if isinstance(item, str) and item not in stmt.group_by:
+            raise ValueError(f"列 {item} 必须出现在 GROUP BY 中")
+
+    group_col_indexes = [col_index_of(table, col_name) for col_name in stmt.group_by]
+    items = []
+    out_col_types = []
+    for item in stmt.items:
+        if isinstance(item, str):
+            items.append(('col', stmt.group_by.index(item)))
+            out_col_types.append(table.col_types[col_index_of(table, item)])
+        else:
+            items.append(agg_item_of(table, item))
+            out_col_types.append(agg_out_type_of(table, item))
+    executor = new_aggregation_executor(child, group_col_indexes, items, out_col_types)
+
+    if stmt.having is not None:
+        col_index = having_col_index_of(stmt)
+        executor = new_filter_executor(executor, col_index, OP_STR_TO_CONST[stmt.having.op],
+                                       new_value(stmt.having.literal, out_col_types[col_index]))
+    return executor
+
+
+def agg_item_of(table: Table, call: AggCall) -> tuple:
+    func_const = AGG_FUNC_STR_TO_CONST[call.func]
+    if call.col_name is None:
+        if call.func != 'COUNT':
+            raise ValueError(f"{call.func} 需要列参数")
+        return func_const, None
+    return func_const, col_index_of(table, call.col_name)
+
+
+def agg_out_type_of(table: Table, call: AggCall) -> int:
+    if call.func == 'COUNT':
+        return VALUE_TYPE_INT
+    col_type = table.col_types[col_index_of(table, call.col_name)]
+    if call.func == 'SUM':
+        if col_type != VALUE_TYPE_INT:
+            raise ValueError("SUM 仅支持 INT 列")
+        return VALUE_TYPE_INT
+    return col_type
+
+
+def having_col_index_of(stmt: SelectStmt) -> int:
+    having = stmt.having
+    if having.agg is not None:
+        for i, item in enumerate(stmt.items):
+            if isinstance(item, AggCall) and item.func == having.agg.func \
+                    and item.col_name == having.agg.col_name:
+                return i
+        raise ValueError("HAVING 引用的聚合必须出现在 SELECT 中")
+    for i, item in enumerate(stmt.items):
+        if item == having.col_name:
+            return i
+    raise ValueError(f"HAVING 引用的列 {having.col_name} 必须出现在 SELECT 中")
+
+
 def build_scan(table: Table, conditions: list[Condition]) -> Executor:
     """
     WHERE 条件（AND 连接）→ 扫描执行器。
@@ -84,6 +158,9 @@ def build_scan(table: Table, conditions: list[Condition]) -> Executor:
     用 IndexScan 替代 SeqScan + 对应 Filter，其余条件保持 Filter。
     """
     remaining = list(conditions)
+    for condition in remaining:
+        if condition.agg is not None:
+            raise ValueError("WHERE 不支持聚合函数，聚合过滤请用 HAVING")
     executor = None
     for col_indexes, _ in table.indexes.items():
         eq_conditions = [condition_for_col(remaining, table.col_names[col_index], '=')
@@ -131,19 +208,3 @@ def new_row_from_literals(table: Table, literals: list[int | str | bool]) -> Row
         raise ValueError(f"INSERT 需要 {len(table.col_types)} 个值，实际 {len(literals)} 个")
     vals = [new_value(literal, col_type) for literal, col_type in zip(literals, table.col_types)]
     return new_row(vals)
-
-
-def new_value(literal: int | str | bool, col_type: int) -> Value:
-    if col_type == VALUE_TYPE_INT:
-        if type(literal) is not int:
-            raise ValueError(f"类型不匹配：期望 INT，实际 {literal!r}")
-        return new_value_int(literal)
-    if col_type == VALUE_TYPE_STRING:
-        if type(literal) is not str:
-            raise ValueError(f"类型不匹配：期望 STRING，实际 {literal!r}")
-        return new_value_string(literal)
-    if col_type == VALUE_TYPE_BOOL:
-        if type(literal) is not bool:
-            raise ValueError(f"类型不匹配：期望 BOOL，实际 {literal!r}")
-        return new_value_bool(literal)
-    raise ValueError(f"未知列类型 {col_type}")

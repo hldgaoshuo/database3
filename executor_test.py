@@ -1,11 +1,15 @@
 import inspect
 import os
 
+import pytest
+
 from buffer_pool_manager import new_buffer_pool_manager
-from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS, BUFFER_POOL_SIZE, OP_EQ, OP_GT, OP_LE
+from const import META_PAGE_ID, BYTES_MAGIC_NUMBER, MAGIC_NUMBER_BS, BUFFER_POOL_SIZE, OP_EQ, OP_GT, OP_LE, \
+    AGG_COUNT, AGG_SUM, AGG_MIN, AGG_MAX
 from database import Database, new_database
 from executor import index_key, new_values_executor, new_seq_scan_executor, new_index_scan_executor, \
-    new_filter_executor, new_projection_executor, new_insert_executor, new_update_executor, new_delete_executor
+    new_filter_executor, new_projection_executor, new_insert_executor, new_update_executor, new_delete_executor, \
+    new_aggregation_executor
 from file import file_open
 from pager import new_pager
 from row import Row, new_row, new_row_from_bytes
@@ -182,4 +186,60 @@ def test_update():
     result = [row for _, row in new_seq_scan_executor(table)]
     assert names_of(result) == ["xiaogang", "xiaolan", "xiaoming"]
     assert row_new in result
+    close(fd, name)
+
+
+def test_aggregation_group_by():
+    name = inspect.currentframe().f_code.co_name
+    fd, db = init(name)
+    table, rows = make_table_with_rows(db)
+
+    # SELECT gender, COUNT(*), SUM(score) FROM data GROUP BY gender
+    scan = new_seq_scan_executor(table)
+    items = [('col', 0), (AGG_COUNT, None), (AGG_SUM, 2)]
+    out_col_types = [VALUE_TYPE_STRING, VALUE_TYPE_INT, VALUE_TYPE_INT]
+    executor = new_aggregation_executor(scan, [1], items, out_col_types)
+    result = sorted((row.vals[0].val, row.vals[1].val, row.vals[2].val) for _, row in executor)
+    assert result == [("f", 1, 85), ("m", 2, 150)]
+    close(fd, name)
+
+
+def test_aggregation_no_group_by():
+    name = inspect.currentframe().f_code.co_name
+    fd, db = init(name)
+    table, rows = make_table_with_rows(db)
+
+    # SELECT COUNT(*), MIN(score), MAX(score) FROM data
+    scan = new_seq_scan_executor(table)
+    items = [(AGG_COUNT, None), (AGG_MIN, 2), (AGG_MAX, 2)]
+    out_col_types = [VALUE_TYPE_INT, VALUE_TYPE_INT, VALUE_TYPE_INT]
+    executor = new_aggregation_executor(scan, [], items, out_col_types)
+    [(oid, row)] = list(executor)
+    assert oid is None
+    assert (row.vals[0].val, row.vals[1].val, row.vals[2].val) == (3, 60, 90)
+    close(fd, name)
+
+
+def test_aggregation_empty_table():
+    name = inspect.currentframe().f_code.co_name
+    fd, db = init(name)
+    table = make_table(db)
+
+    # 空表无 GROUP BY：COUNT 输出 0
+    scan = new_seq_scan_executor(table)
+    executor = new_aggregation_executor(scan, [], [(AGG_COUNT, None)], [VALUE_TYPE_INT])
+    [(_, row)] = list(executor)
+    assert row.vals[0].val == 0
+
+    # 空表无 GROUP BY：SUM/MIN/MAX 无定义（暂不支持 NULL）
+    scan = new_seq_scan_executor(table)
+    executor = new_aggregation_executor(scan, [], [(AGG_SUM, 2)], [VALUE_TYPE_INT])
+    with pytest.raises(ValueError):
+        list(executor)
+
+    # 空表有 GROUP BY：输出零行
+    scan = new_seq_scan_executor(table)
+    executor = new_aggregation_executor(scan, [1], [('col', 0), (AGG_COUNT, None)],
+                                        [VALUE_TYPE_STRING, VALUE_TYPE_INT])
+    assert list(executor) == []
     close(fd, name)

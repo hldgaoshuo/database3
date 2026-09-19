@@ -167,3 +167,65 @@ def test_reopen():
     rows = execute_sql(db2, "SELECT * FROM data WHERE score >= 85")
     assert names_scores_of(rows) == [("xiaohong", "f"), ("xiaoming", "m")]
     close(fd, name)
+
+
+def test_group_by():
+    name = inspect.currentframe().f_code.co_name
+    fd, db = init(name)
+    init_data(db)
+
+    rows = execute_sql(db, "SELECT gender, COUNT(*), SUM(score) FROM data GROUP BY gender")
+    result = sorted((row.vals[0].val, row.vals[1].val, row.vals[2].val) for row in rows)
+    assert result == [("f", 1, 85), ("m", 2, 150)]
+    close(fd, name)
+
+
+def test_aggregation_no_group_by():
+    name = inspect.currentframe().f_code.co_name
+    fd, db = init(name)
+    init_data(db)
+
+    rows = execute_sql(db, "SELECT COUNT(*), MIN(score), MAX(score) FROM data")
+    [(row)] = rows
+    assert (row.vals[0].val, row.vals[1].val, row.vals[2].val) == (3, 60, 90)
+
+    # WHERE 先过滤，再聚合
+    rows = execute_sql(db, "SELECT COUNT(*) FROM data WHERE gender = 'f'")
+    assert rows[0].vals[0].val == 1
+    close(fd, name)
+
+
+def test_having():
+    name = inspect.currentframe().f_code.co_name
+    fd, db = init(name)
+    init_data(db)
+
+    rows = execute_sql(db, "SELECT gender, SUM(score) FROM data GROUP BY gender HAVING SUM(score) > 100")
+    result = sorted((row.vals[0].val, row.vals[1].val) for row in rows)
+    assert result == [("m", 150)]
+
+    # HAVING 引用分组列
+    rows = execute_sql(db, "SELECT gender, COUNT(*) FROM data GROUP BY gender HAVING gender = 'f'")
+    result = [(row.vals[0].val, row.vals[1].val) for row in rows]
+    assert result == [("f", 1)]
+    close(fd, name)
+
+
+def test_aggregation_validation():
+    name = inspect.currentframe().f_code.co_name
+    fd, db = init(name)
+    init_data(db)
+
+    # 普通列必须出现在 GROUP BY 中
+    with pytest.raises(ValueError):
+        execute_sql(db, "SELECT name, COUNT(*) FROM data")
+    # HAVING 引用的列/聚合必须出现在 SELECT 中
+    with pytest.raises(ValueError):
+        execute_sql(db, "SELECT gender, COUNT(*) FROM data GROUP BY gender HAVING score > 1")
+    # SUM 仅支持 INT 列
+    with pytest.raises(ValueError):
+        execute_sql(db, "SELECT SUM(name) FROM data")
+    # WHERE 不支持聚合函数
+    with pytest.raises(ValueError):
+        execute_sql(db, "SELECT * FROM data WHERE COUNT(*) > 1")
+    close(fd, name)
