@@ -12,6 +12,7 @@ from executor import index_key, new_values_executor, new_seq_scan_executor, new_
     new_aggregation_executor
 from file import file_open
 from pager import new_pager
+from wal import new_wal
 from row import Row, new_row, new_row_from_bytes
 from table import Table
 from value.const import VALUE_TYPE_STRING, VALUE_TYPE_INT
@@ -23,7 +24,11 @@ TB_NAME = 'data'
 
 def init(name: str) -> tuple[int, Database]:
     fd = file_open(f'{name}.db')
-    pager = new_buffer_pool_manager(new_pager(fd), BUFFER_POOL_SIZE)
+    pager = new_pager(fd)
+    wal = new_wal(f'{name}.db.wal')
+    wal.replay(pager)
+    wal.truncate()
+    pager = new_buffer_pool_manager(pager, BUFFER_POOL_SIZE, wal)
     meta = pager.page_get(META_PAGE_ID)
     magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
     assert magic_number_bs != MAGIC_NUMBER_BS
@@ -35,6 +40,7 @@ def init(name: str) -> tuple[int, Database]:
 def close(fd: int, name: str) -> None:
     os.close(fd)
     os.remove(f'{name}.db')
+    os.remove(f'{name}.db.wal')
 
 
 def make_table(db: Database) -> Table:

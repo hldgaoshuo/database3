@@ -4,11 +4,16 @@ from database import new_database_from_meta, new_database
 from file import file_open
 from pager import new_pager
 from sql.engine import execute_sql
+from wal import new_wal
 
 
 def __main():
     fd = file_open(f'test.db')
-    pager = new_buffer_pool_manager(new_pager(fd), BUFFER_POOL_SIZE)
+    pager = new_pager(fd)
+    wal = new_wal(f'test.db.wal')
+    wal.replay(pager)
+    wal.truncate()
+    pager = new_buffer_pool_manager(pager, BUFFER_POOL_SIZE, wal)
     meta = pager.page_get(META_PAGE_ID)
     magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
     if magic_number_bs == MAGIC_NUMBER_BS:

@@ -5,6 +5,7 @@ from const import BYTES_PAGE, META_PAGE_ID, MAGIC_NUMBER_BS, BYTES_MAGIC_NUMBER,
 from lru_replacer import LRUReplacer
 from pager import Pager
 from utils import to_bytes, from_bytes
+from wal import Wal
 
 
 class Frame:
@@ -22,10 +23,13 @@ class BufferPoolManager:
     上层通过 page_get 拿到的是页副本（BytesIO），写回只能显式调用 page_set，
     调用方从不持有池内页内存，因此无需 BusTub 的 pin/unpin 机制：
     所有帧恒可驱逐，脏页在驱逐或 flush 时落盘。
+    持有 Wal 时遵循 write-ahead：弄脏帧之前先把页镜像写入日志；
+    flush_all_pages 全部落盘后 checkpoint（截断日志）。
     """
 
     def __init__(self):
         self.pager: Pager | None = None
+        self.wal: Wal | None = None
         self.frames: list[Frame] = []
         self.page_table: dict[int, int] = {}
         self.free_frames: list[int] = []
@@ -43,6 +47,7 @@ class BufferPoolManager:
         frame_id = self._fetch_frame(page_id)
         frame = self.frames[frame_id]
         frame.data[:] = page_bs + b'\x00' * (BYTES_PAGE - len(page_bs))
+        self._log_write_ahead(frame)
         frame.is_dirty = True
 
     def flush_page(self, page_id: int) -> None:
@@ -58,6 +63,8 @@ class BufferPoolManager:
     def flush_all_pages(self) -> None:
         for page_id in list(self.page_table.keys()):
             self.flush_page(page_id)
+        if self.wal is not None:
+            self.wal.truncate()
 
     def magic_number_set(self) -> None:
         offset = META_PAGE_ID * BYTES_PAGE
@@ -182,7 +189,12 @@ class BufferPoolManager:
         frame_id = self._fetch_frame(page_id)
         frame = self.frames[frame_id]
         frame.data[inner_offset:inner_offset + len(bs)] = bs
+        self._log_write_ahead(frame)
         frame.is_dirty = True
+
+    def _log_write_ahead(self, frame: Frame) -> None:
+        if self.wal is not None:
+            self.wal.append(frame.page_id, bytes(frame.data))
 
     def _partial_read(self, offset: int, length: int) -> bytes:
         page_id = offset // BYTES_PAGE
@@ -193,9 +205,10 @@ class BufferPoolManager:
         return bs
 
 
-def new_buffer_pool_manager(pager: Pager, pool_size: int) -> BufferPoolManager:
+def new_buffer_pool_manager(pager: Pager, pool_size: int, wal: Wal = None) -> BufferPoolManager:
     bpm = BufferPoolManager()
     bpm.pager = pager
+    bpm.wal = wal
     bpm.frames = [Frame() for _ in range(pool_size)]
     bpm.page_table = {}
     bpm.free_frames = list(reversed(range(pool_size)))

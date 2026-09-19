@@ -8,11 +8,16 @@ from free_list import new_free_list
 from const import META_PAGE_ID, BUFFER_POOL_SIZE
 from file import file_open
 from pager import new_pager
+from wal import new_wal
 
 
 def init(name: str) -> tuple[int, BPlusTree]:
     fd = file_open(f'{name}.db')
-    pager = new_buffer_pool_manager(new_pager(fd), BUFFER_POOL_SIZE)
+    pager = new_pager(fd)
+    wal = new_wal(f'{name}.db.wal')
+    wal.replay(pager)
+    wal.truncate()
+    pager = new_buffer_pool_manager(pager, BUFFER_POOL_SIZE, wal)
     free_list = new_free_list(pager, META_PAGE_ID)
     b_plus_tree = new_b_plus_tree(pager, free_list, 0, True)
     return fd, b_plus_tree
@@ -40,6 +45,7 @@ def _show(node: BPlusTreeNode, count: int) -> None:
 def close(fd: int, name: str) -> None:
     os.close(fd)
     os.remove(f'{name}.db')
+    os.remove(f'{name}.db.wal')
 
 
 def test_add_1():

@@ -8,6 +8,7 @@ from file import file_open
 from free_list import new_free_list_from_page_id, new_free_list
 from kv import new_kv, KV
 from pager import new_pager
+from wal import new_wal
 from utils import from_bytes, from_buf
 
 KV_NAME = 'test_kv'
@@ -16,11 +17,17 @@ KV_NAME = 'test_kv'
 def teardown_module():
     if os.path.exists(f'{KV_NAME}.db'):
         os.remove(f'{KV_NAME}.db')
+    if os.path.exists(f'{KV_NAME}.db.wal'):
+        os.remove(f'{KV_NAME}.db.wal')
 
 
 def init(name: str) -> tuple[int, KV]:
     fd = file_open(f'{name}.db')
-    pager = new_buffer_pool_manager(new_pager(fd), BUFFER_POOL_SIZE)
+    pager = new_pager(fd)
+    wal = new_wal(f'{name}.db.wal')
+    wal.replay(pager)
+    wal.truncate()
+    pager = new_buffer_pool_manager(pager, BUFFER_POOL_SIZE, wal)
     meta = pager.page_get(META_PAGE_ID)
     magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
     if magic_number_bs == MAGIC_NUMBER_BS:

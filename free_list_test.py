@@ -7,11 +7,16 @@ from file import file_open
 from free_list import FreeList, new_free_list, new_free_list_from_page_id
 from pager import new_pager
 from utils import from_buf
+from wal import new_wal
 
 
 def init(name: str) -> tuple[int, FreeList]:
     fd = file_open(f'{name}.db')
-    pager = new_buffer_pool_manager(new_pager(fd), BUFFER_POOL_SIZE)
+    pager = new_pager(fd)
+    wal = new_wal(f'{name}.db.wal')
+    wal.replay(pager)
+    wal.truncate()
+    pager = new_buffer_pool_manager(pager, BUFFER_POOL_SIZE, wal)
     meta = pager.page_get(META_PAGE_ID)
     magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
     if magic_number_bs == MAGIC_NUMBER_BS:
@@ -28,6 +33,7 @@ def init(name: str) -> tuple[int, FreeList]:
 def close(fd: int, name: str) -> None:
     os.close(fd)
     os.remove(f'{name}.db')
+    os.remove(f'{name}.db.wal')
 
 
 def test_add_unused_page_id_1():

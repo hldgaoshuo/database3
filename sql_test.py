@@ -9,6 +9,7 @@ from database import Database, new_database, new_database_from_meta
 from executor import IndexScanExecutor, SeqScanExecutor
 from file import file_open
 from pager import new_pager
+from wal import new_wal
 from sql.engine import execute_sql, build_scan, parse_sql
 from value.const import VALUE_TYPE_STRING, VALUE_TYPE_INT
 
@@ -17,7 +18,11 @@ TB_NAME = 'data'
 
 def init(name: str) -> tuple[int, Database]:
     fd = file_open(f'{name}.db')
-    pager = new_buffer_pool_manager(new_pager(fd), BUFFER_POOL_SIZE)
+    pager = new_pager(fd)
+    wal = new_wal(f'{name}.db.wal')
+    wal.replay(pager)
+    wal.truncate()
+    pager = new_buffer_pool_manager(pager, BUFFER_POOL_SIZE, wal)
     meta = pager.page_get(META_PAGE_ID)
     magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
     assert magic_number_bs != MAGIC_NUMBER_BS
@@ -26,8 +31,12 @@ def init(name: str) -> tuple[int, Database]:
     return fd, db
 
 
-def reopen(fd: int) -> Database:
-    pager = new_buffer_pool_manager(new_pager(fd), BUFFER_POOL_SIZE)
+def reopen(fd: int, name: str) -> Database:
+    pager = new_pager(fd)
+    wal = new_wal(f'{name}.db.wal')
+    wal.replay(pager)
+    wal.truncate()
+    pager = new_buffer_pool_manager(pager, BUFFER_POOL_SIZE, wal)
     meta = pager.page_get(META_PAGE_ID)
     magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
     assert magic_number_bs == MAGIC_NUMBER_BS
@@ -38,6 +47,7 @@ def reopen(fd: int) -> Database:
 def close(fd: int, name: str) -> None:
     os.close(fd)
     os.remove(f'{name}.db')
+    os.remove(f'{name}.db.wal')
 
 
 def init_data(db: Database) -> None:
@@ -163,7 +173,7 @@ def test_reopen():
     init_data(db)
     db.pager.flush_all_pages()
 
-    db2 = reopen(fd)
+    db2 = reopen(fd, name)
     rows = execute_sql(db2, "SELECT * FROM data WHERE score >= 85")
     assert names_scores_of(rows) == [("xiaohong", "f"), ("xiaoming", "m")]
     close(fd, name)

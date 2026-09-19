@@ -7,11 +7,16 @@ from file import file_open
 from pager import new_pager
 from b_plus_tree_seq import BPlusTreeSeqGenerator, new_b_plus_tree_seq_generator
 from utils import from_buf
+from wal import new_wal
 
 
 def init_b_plus_tree_seq_gen(name: str) -> tuple[int, BPlusTreeSeqGenerator]:
     fd = file_open(f'{name}.db')
-    pager = new_buffer_pool_manager(new_pager(fd), BUFFER_POOL_SIZE)
+    pager = new_pager(fd)
+    wal = new_wal(f'{name}.db.wal')
+    wal.replay(pager)
+    wal.truncate()
+    pager = new_buffer_pool_manager(pager, BUFFER_POOL_SIZE, wal)
     meta = pager.page_get(META_PAGE_ID)
     magic_number_bs = meta.read(BYTES_MAGIC_NUMBER)
     if magic_number_bs == MAGIC_NUMBER_BS:
@@ -37,3 +42,4 @@ def test_b_plus_tree_seq_gen():
         print(r)
     os.close(fd)
     os.remove(f'{name}.db')
+    os.remove(f'{name}.db.wal')
